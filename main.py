@@ -4,32 +4,45 @@ from flask import send_from_directory
 from flask.ext.script import Command, Manager
 from werkzeug.utils import secure_filename
 from os.path import expanduser
+import time
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler
+
+# Configs
+fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'py', 'cpp', 'h', 'java', 'doc'])
-
-fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 
 #fileManager = Manager(fileApp)
 
-#Helper - see if file is allowed
-def allowed_file(filename):
-   return '.' in filename and \
-   filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+def watch_file_changes():
+    """ Start watchdog. """
+    event_handler = LoggingEventHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path='.', recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
 
 @fileApp.route('/', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'POST':
         file = request.files['file']
-        if file and allowed_file(file.filename):
+        if file:
             filename = secure_filename(file.filename)
             file.save(os.path.join(fileApp.config['UPLOAD_FOLDER'], filename))
     return "File uploaded!\n"
 
 
-#View uploaded files
+# View uploaded files
+# TODO: display all files uploaded to server on one page instead of url routing.
 @fileApp.route('/uploads/<filename>')
 def uploaded_files(filename):
     return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
@@ -38,5 +51,6 @@ def uploaded_files(filename):
 
 if __name__ == '__main__':
     fileApp.run() # debug=True
-    os.system("curl -X POST -F file=@hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
+    watch_file_changes()
+    # os.system("curl -X POST -F file=@hello/hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
     #fileManager.run()
