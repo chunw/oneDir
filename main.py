@@ -4,6 +4,7 @@ from flask import send_from_directory
 from flask.ext.script import Command, Manager
 from werkzeug.utils import secure_filename
 from os.path import expanduser
+import requests
 
 #fileManager = Manager(fileApp)
 
@@ -37,5 +38,5 @@ def uploaded_files(filename):
 if __name__ == '__main__':
     fileApp.run() # debug=True
 
-    # os.system("curl -X POST -F file=@hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
+    os.system("curl -X POST -F file=@hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
     #fileManager.run()
