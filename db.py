@@ -16,6 +16,7 @@ def addUserAccount(username, password):
         VALUES (?, ?)''', (username, password))
 
 def main():
+    createTable()
     #queryCurs.execute('''DELETE  FROM user_account where username = 'justinc' ''')
     #addUserAccount('justinc', 'qwerty')
     #addUserAccount('user1', 'password')
