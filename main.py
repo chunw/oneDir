@@ -19,6 +19,7 @@ fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @fileApp.route('/', methods=['GET', 'POST'])
 def upload_file():
+    #os.system("curl -X POST -F file=@hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
     if request.method == 'POST':
         file = request.files['file']
         if file:
@@ -27,6 +28,13 @@ def upload_file():
             return "File uploaded!\n"
     return "Welcome"
 
+# This method will share the file by changing 
+def share_file(string filename):
+    os.system("curl --user  GET -F file=filename \"http://localhost:5000/\"")
+    os.system("chmod u+rwx filename")
+    
+    
+    
 # View uploaded files
 # TODO: display all files uploaded to server on one page instead of url routing.
 @fileApp.route('/uploads/<filename>')
@@ -38,5 +46,9 @@ def uploaded_files(filename):
 if __name__ == '__main__':
     fileApp.run() # debug=True
 
-    os.system("curl -X POST -F file=@hello.txt \"http://localhost:5000/\"") # use curl upload file to flask server
+        #to verify the username and password when trying to upload or access a file simply
+        #add "--user name: password http://localhost:5000/"
+       #this command will upload the file "hello.txt" to the server. 
+       #adding this would make sharing easier
+    
     #fileManager.run()
