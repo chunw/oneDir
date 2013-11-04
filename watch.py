@@ -14,9 +14,13 @@ SERVER_URL = 'http://localhost:5000'
 
 
 def upload_file_to_server(file_path):
-    """ upload file to server """
-    files = {'file': open(file_path, 'rb')}
-    r = requests.post(SERVER_URL, files=files)
+    temp = file_path.split("uploads/")
+    filename = temp[1]
+    os.system("curl -X POST -F file=@" + file_path + " \"http://localhost:5000/\"")
+  #  os.curl("-O http")
+    os.system("curl -O \"http://127.0.0.1:5000/uploads/<filename>\" | ~/Desktop")
+    print filename
+    print file_path
 
 
 class MyEventHandler(FileSystemEventHandler):
