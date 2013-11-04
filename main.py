@@ -1,67 +1,61 @@
-import os
+__author__ = 'Chris'
 
+from flask.ext.script import Manager, prompt_bool
 
-import requests
-from flask import Flask, request, redirect, url_for
-from flask import send_from_directory
-#from flask.ext.script import Command, Manager
-from werkzeug.utils import secure_filename
-from os.path import expanduser
-import requests
+from flask import Flask
 
-#fileManager = Manager(fileApp)
-
-# Configs
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 
-home = expanduser("~")
-UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+manager = Manager(fileApp)
+#manager2 = Manager(usage="Perform something")
 
-#fileManager = Manager(fileApp)
+#TODO: Commands
+#run python file -> log in
+#change password
+#share file
+#turn auto synch on or off
+#NOT add file -> this is done automatically by moving files around
+#Signal sharing library (in Python)?
+#FTP/Curl for sharing
 
-@fileApp.route('/', methods=['GET', 'POST'])
-def upload_file():
-    os.system("curl -X POST -F file=@check.txt \"http://localhost:5000/\"")
+@manager.command
+def start():
+    "Kick off the user command line interface."
+    opt = 22
+    while (opt != 0):
+        #TODO: ask for login info, then show a different set of user options based on login type
+        #but, for now, show file user options
+        #admin user options - delete user, add user, start/stop back end stuff, more?
+        print '''
+        1) login
+        2) share
+        3) change password
+        4) turn auto synch on or off
+        '''
+        opt = input("Please enter an option you want to do, or '0' to quit. ")
+        while opt < 0 or opt > 4 or not isinstance(opt, int):
+            opt = input("That is an invalid option, please re-try. ")
+        if opt == 1:
+            login()
+        if opt == 2:
+            shareFile()
+        if opt == 3:
+            changePassword()
+        if opt == 4:
+            changeSynch()
 
-#this will serve the uploaded files back to the user..?
-@fileApp.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
+def login():
+    print "This is how you would log in"
 
-def receive_file(filename):
-    os.curl('-O "')
+def shareFile():
+    print "This is how you would share files"
 
-#    os.system("curl --user GET
- #   if request.method == 'GET':
-  #      file = request.files['file']
-   #     if file:
-    #        filename = secure_filename(file.filename)
+def changePassword():
+    print "This is how you would change your password"
 
-
-# This method will share the file by changing 
-#def share_file(string filename):
- #   os.system("curl --user  GET -F file=filename \"http://localhost:5000/\"")
-  #  os.system("chmod u+rwx filename")
-    
-    
-    
-# View uploaded files
-# TODO: display all files uploaded to server on one page instead of url routing.
-#@fileApp.route('/uploads/<filename>')
-#def uploaded_files(filename):
- #   return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
-
-#fileManager.add_command('upload', Upload())
+def changeSynch():
+    print "This is how you would change the autosynch settings"
 
 if __name__ == '__main__':
-    fileApp.run() # debug=True
-    os.system("curl -X POST -F file=@test.txt \"http://localhost:5000/\"")
-   # os.system("curl -O http://127.0.0.1:5000/uploads/check.txt | ~/Desktop")
+    manager.run()
 
-        #to verify the username and password when trying to upload or access a file simply
-        #add "--user name: password http://localhost:5000/"
-       #this command will upload the file "hello.txt" to the server. 
-       #adding this would make sharing easier
-    
-    #fileManager.run()
