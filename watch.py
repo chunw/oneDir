@@ -5,7 +5,7 @@ import time
 import logging
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import requests
+from watchdog.events import PatternMatchingEventHandler
 
 # Configs
 home = expanduser("~")
@@ -13,52 +13,52 @@ UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads
 SERVER_URL = 'http://localhost:5000'
 
 
-def upload_file_to_server(file_path):
-    temp = file_path.split("uploads/")
-    filename = temp[1]
-    os.system("curl -X POST -F file=@" + file_path + " \"http://localhost:5000/\"")
-  #  os.curl("-O http")
-    os.system("curl -O \"http://127.0.0.1:5000/uploads/<filename>\" | ~/Desktop")
-    print filename
-    print file_path
-
-
-class MyEventHandler(FileSystemEventHandler):
+class MyEventHandler(PatternMatchingEventHandler):
     """ customized file system event handler
-        TODO ignore pattern in path: ".DS_Store"
     """
+    ignore_pattern = ".DS_Store"
+
     def catch_all(self, event, op):
-        op_file_path = event.src_path
-        print (op, event.is_directory, op_file_path)
+        if not self.ignore_pattern in event.src_path:
+            print (op, event.is_directory, event.src_path)
+
+    def parse_filename(self,file_path):
+        temp = file_path.split("uploads/")
+        return temp[1]
+
+    def download(self, filename):
+        print "Syncing ..."
+        os.system("curl http://127.0.0.1:5000/uploads/hi.txt > ~/uploads/hi2.txt | ~/Desktop")
+        #download = "curl http://127.0.0.1:5000/uploads/"+filename + " > " + UPLOAD_FOLDER+"/"+filename
+        #os.system(download)
+
+    def delete(self, filename):
+        # delete file on client machine
+        return
 
     def on_created(self, event):
+        # event.is_directory is correct
         self.catch_all(event, 'NEW')
-        if event.is_directory:
-            upload_file_to_server(event.src_path)
-        else:
-            # TODO create folder on server
-            return
+        filename = self.parse_filename(event.src_path)
+        self.download(filename)
 
     def on_deleted(self, event):
+        # event.is_directory is correct
         self.catch_all(event, 'DEL')
-        # TODO delete folder on server
 
     def on_modified(self, event):
-        # Note: this event is also triggered with on_created or on_deleted event
-
-        if event.is_directory:
-            # Note for Mac OS X: FSEvents returns only the directory for file modified events,
-            # which means event.is_directory is not reflecting the truth in Mac OS.
-
-            # Detect the full path in Mac OS. TODO test in other OS.
-
-            files_in_dir = [event.src_path+"/"+f for f in os.listdir(event.src_path)]
-            op_file_path = max(files_in_dir, key=os.path.getmtime)
-            upload_file_to_server(op_file_path)
-        else:
-            op_file_path = event.src_path
-        print ("MOD", event.is_directory, op_file_path)
-
+        # Note: event.is_directory is True for both files and folders
+        # print self.ignore_pattern in event.src_path
+        if not self.ignore_pattern in event.src_path:
+            if event.is_directory:
+                # For Mac OS X: FSEvents returns only the directory for file modified events,
+                # which means event.is_directory is not reflecting the truth in Mac OS.
+                # The following code detects the full path in Mac OS.
+                files_in_dir = [event.src_path+"/"+f for f in os.listdir(event.src_path)]
+                op_file_path = max(files_in_dir, key=os.path.getmtime)
+                print ("MOD", op_file_path)
+                filename = self.parse_filename(event.src_path)
+                self.download(filename)
 
 if __name__ == "__main__":
 

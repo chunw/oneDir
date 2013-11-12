@@ -22,46 +22,21 @@ fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @fileApp.route('/', methods=['GET', 'POST'])
 def upload_file():
-    os.system("curl -X POST -F file=@check.txt \"http://localhost:5000/\"")
+    if request.method == 'POST':
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(fileApp.config['UPLOAD_FOLDER'], filename))
+            return "File uploaded!\n"
+    return "Welcome"
 
-#this will serve the uploaded files back to the user..?
+# View uploaded files
+# TODO: display all files uploaded to server on one page instead of url routing.
 @fileApp.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
 
-def receive_file(filename):
-    os.curl('-O "')
-
-#    os.system("curl --user GET
- #   if request.method == 'GET':
-  #      file = request.files['file']
-   #     if file:
-    #        filename = secure_filename(file.filename)
-
-
-# This method will share the file by changing 
-#def share_file(string filename):
- #   os.system("curl --user  GET -F file=filename \"http://localhost:5000/\"")
-  #  os.system("chmod u+rwx filename")
-    
-    
-    
-# View uploaded files
-# TODO: display all files uploaded to server on one page instead of url routing.
-#@fileApp.route('/uploads/<filename>')
-#def uploaded_files(filename):
- #   return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
-
-#fileManager.add_command('upload', Upload())
 
 if __name__ == '__main__':
-    fileApp.run() # debug=True
-    os.system("curl -X POST -F file=@test.txt \"http://localhost:5000/\"")
-   # os.system("curl -O http://127.0.0.1:5000/uploads/check.txt | ~/Desktop")
+    fileApp.run()           # debug=True
 
-        #to verify the username and password when trying to upload or access a file simply
-        #add "--user name: password http://localhost:5000/"
-       #this command will upload the file "hello.txt" to the server. 
-       #adding this would make sharing easier
-    
     #fileManager.run()
