@@ -21,31 +21,46 @@ manager = Manager(fileApp)
 @manager.command
 def start():
     "Kick off the user command line interface."
+    print '''
+    Please provide your log-in information.
+    '''
+    username = input("Username: ")
+    password = input("Password: ")
+    #get user type
     opt = 22
+
     while (opt != 0):
         #TODO: ask for login info, then show a different set of user options based on login type
-        #but, for now, show file user options
-        #admin user options - delete user, add user, start/stop back end stuff, more?
+        #if (user type == file user)
         print '''
-        1) login
-        2) share
-        3) change password
-        4) turn auto synch on or off
+        1) share
+        2) change password
+        3) turn auto synch on or off
         '''
         opt = input("Please enter an option you want to do, or '0' to quit. ")
-        while opt < 0 or opt > 4 or not isinstance(opt, int):
+        while opt < 0 or opt > 3 or not isinstance(opt, int):
             opt = input("That is an invalid option, please re-try. ")
         if opt == 1:
-            login()
-        if opt == 2:
             shareFile()
-        if opt == 3:
+        if opt == 2:
             changePassword()
-        if opt == 4:
+        if opt == 3:
             changeSynch()
-
-def login():
-    print "This is how you would log in"
+        #else if (user type == admin user)
+        print '''
+        1) delete user
+        2) add user
+        3) start or stop file system
+        '''
+        opt = input("Please enter an option you want to do, or '0' to quit. ")
+        while opt < 0 or opt > 3 or not isinstance(opt, int):
+            opt = input("That is an invalid option, please re-try. ")
+        if opt == 1:
+            deleteUser()
+        if opt == 2:
+            addUser()
+        if opt == 3:
+            changeSystem()
 
 def shareFile():
     print "This is how you would share files"
@@ -55,6 +70,15 @@ def changePassword():
 
 def changeSynch():
     print "This is how you would change the autosynch settings"
+
+def deleteUser():
+    print "This is how you would delete a user"
+
+def addUser():
+    print "This is how you would add a user"
+
+def changeSystem():
+    print "This is how you would start or stop the system"
 
 if __name__ == '__main__':
     manager.run()
