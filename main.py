@@ -11,7 +11,7 @@ manager = Manager(fileApp)
 
 # Load default config and override config from an environment variable
 fileApp.config.update(dict(
-    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -118,8 +118,8 @@ def createNewAccount():
     db = get_db()
     newUserName = raw_input("Please enter the user name you would like. ")
     newPassword = raw_input("Please enter the password you would like. ")
-    db.cursor().execute('''INSERT INTO user_account (username, password)
-         VALUES (?, ?)''', (newUserName, newPassword))
+    db.cursor().execute('''INSERT INTO user_account (username, password, user_type, files)
+         VALUES (?, ?, ?, ?)''', (newUserName, newPassword, 'normal', None))
     db.commit()
 
 

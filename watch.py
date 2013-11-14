@@ -10,7 +10,7 @@ from watchdog.events import PatternMatchingEventHandler
 # Configs
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-SERVER_URL = 'http://localhost:5000'
+SERVER_URL = 'http://localhost:5000'  #http://1455d817.ngrok.com
 
 
 class MyEventHandler(PatternMatchingEventHandler):
@@ -28,9 +28,9 @@ class MyEventHandler(PatternMatchingEventHandler):
 
     def download(self, filename):
         print "Syncing ..."
-        os.system("curl http://127.0.0.1:5000/uploads/hi.txt > ~/uploads/hi2.txt | ~/Desktop")
+        os.system("curl http://1455d817.ngrok.com/uploads/hi5.txt > ~/uploads/hi3.txt")
+
         #download = "curl http://127.0.0.1:5000/uploads/"+filename + " > " + UPLOAD_FOLDER+"/"+filename
-        #os.system(download)
 
     def delete(self, filename):
         # delete file on client machine
