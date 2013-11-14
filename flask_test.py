@@ -44,7 +44,8 @@ def close_db(error):
 @app.route('/')
 def show_entries():
     db = get_db()
-    cur = db.execute('select username from user_account')
+    cur = db.execute('select username from user_account') # query string: select password from user_account
+    # where username = \'justinc \'
     entries = cur.fetchall()
     print entries
     return render_template('show_database.html', entries=entries)
