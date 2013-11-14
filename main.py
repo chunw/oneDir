@@ -23,6 +23,7 @@ fileApp.config.from_object(__name__)
 def connect_db():
     """Connects to the specific database."""
     rv = sqlite3.connect(fileApp.config['DATABASE'])
+    rv.text_factory = str
     rv.row_factory = sqlite3.Row
     return rv
 
@@ -47,10 +48,11 @@ def close_db(error):
 def start():
     "Kick off the user command line interface."
     db = get_db()
+    finalUserName = ''
 
     inputNew = raw_input("Are you a new user? y/n ")
 
-    if (inputNew == 'Y' or inputNew == 'y'):
+    if (inputNew == 'Y' or inputNew == 'y' or inputNew == 'yes' or inputNew == 'Yes'):
         createNewAccount()
 
     else:
@@ -65,61 +67,66 @@ def start():
         if (len(entries) == 0 or len(entries2) == 0):
             print "Invalid login, please re-run the program to log in."
             exit(0)
+        else:
+            finalUserName = inputUserName
 
     opt = 22
 
     while (opt != 0):
-        #if (user type == file user)
-        print '''
-        1) Share a file
-        2) Change password
-        3) Turn auto synch on or off
-        '''
-        opt = input("Please enter an option you want to do, or '0' to quit. ")
-        while opt < 0 or opt > 3 or not isinstance(opt, int):
-            opt = input("That is an invalid option, please re-try. ")
-        if opt == 1:
-            shareFile()
-        if opt == 2:
-            changePassword()
-        if opt == 3:
-            changeSynch()
+        cur = db.execute("SELECT user_type FROM user_account where username =?", (finalUserName,))
+        type = cur.fetchone()[0]
 
-        #else if (user type == admin user)
-        print '''
-        1) Delete user
-        2) Change a user's password
-        3) Start or stop file system
-        4) See user information
-        5) Get file system information
-        6) View traffic report log
-        7) Change your password
-        '''
-        opt = input("Please enter an option you want to do, or '0' to quit. ")
-        while opt < 0 or opt > 6 or not isinstance(opt, int):
-            opt = input("That is an invalid option, please re-try. ")
-        if opt == 1:
-            deleteUser()
-        if opt == 2:
-            changePasswordAsAdmin()
-        if opt == 3:
-            changeSystem()
-        if opt == 4:
-            viewUserInfo()
-        if opt == 5:
-            viewFileSystem()
-        if opt == 6:
-            viewReportLog()
-        if opt == 7:
-            changePassword()
+        if type == 'normal': #show file user options
+            print '''
+            1) Share a file
+            2) Change password
+            3) Turn auto synch on or off
+            '''
+            opt = input("Please enter an option you want to do, or '0' to quit. ")
+            while opt < 0 or opt > 3 or not isinstance(opt, int):
+                opt = input("That is an invalid option, please re-try. ")
+            if opt == 1:
+                shareFile()
+            if opt == 2:
+                changePassword()
+            if opt == 3:
+                changeSynch()
+
+        elif type == 'admin': #show admin user options
+            print '''
+            1) Delete user
+            2) Change a user's password
+            3) Start or stop file system
+            4) See user information
+            5) Get file system information
+            6) View traffic report log
+            7) Change your password
+            '''
+            opt = input("Please enter an option you want to do, or '0' to quit. ")
+            while opt < 0 or opt > 6 or not isinstance(opt, int):
+                opt = input("That is an invalid option, please re-try. ")
+            if opt == 1:
+                deleteUser()
+            if opt == 2:
+                changePasswordAsAdmin()
+            if opt == 3:
+                changeSystem()
+            if opt == 4:
+                viewUserInfo()
+            if opt == 5:
+                viewFileSystem()
+            if opt == 6:
+                viewReportLog()
+            if opt == 7:
+                changePassword()
 
 
 def createNewAccount():
     db = get_db()
     newUserName = raw_input("Please enter the user name you would like. ")
     newPassword = raw_input("Please enter the password you would like. ")
-    db.cursor().execute('''INSERT INTO user_account (username, password)
-         VALUES (?, ?)''', (newUserName, newPassword))
+    db.cursor().execute('''INSERT INTO user_account (username, password, user_type)
+         VALUES (?, ?, 'normal')''', (newUserName, newPassword))
     db.commit()
 
 
