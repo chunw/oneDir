@@ -1,27 +1,26 @@
-from flask import Flask,request
-import os
+__author__ = 'marlenakauer'
+
+from flask import Flask
 from flask import send_from_directory
 from os.path import expanduser
+import os
+
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
+serverURL = 'http://172.25.107.209:8080/'
+#POST file to server
+def clientUpload(filename):
+    f = ' filedata=@'
+    g = f + filename
+    os.system('curl -F'+g +' http://172.25.107.209:8080/')
 
-home = expanduser("~")
-UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+#create method on client side that will create uploads or onedir folder if none exists
 
-@fileApp.route('/', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        file = request.files['file']
-        if file:
-            filename = file.filename
-            file.save(os.path.join(fileApp.config['UPLOAD_FOLDER'], filename))
-    return "Welcome to OneDir-group14"
-
-@fileApp.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
-
+#pass in username as well so that the DB can verify the user can make this request
+def clientDownload(filename):
+    #check with database that user can download this file
+    os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/uploads/' + filename )
 
 if __name__ == '__main__':
-    os.system("curl -X POST file=@db.py http://1455d817.ngrok.com")
+    clientUpload('blah.txt')
+    clientDownload('db.py')
