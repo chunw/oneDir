@@ -1,9 +1,15 @@
 __author__ = 'Chris'
 
-from flask.ext.script import Manager, prompt_bool
+from flask.ext.script import Manager
 from sqlite3 import dbapi2 as sqlite3
-from flask import Flask, request, session, g, redirect, url_for, abort, \
-    render_template, flash
+from flask import Flask, g
+from os.path import expanduser
+import os
+import server
+
+#Where he client knows to look for the folder
+#serverURL = 'http://172.25.107.209:8080/'
+serverURL = 'http://0.0.0.0:8080'
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -18,6 +24,7 @@ fileApp.config.update(dict(
     PASSWORD='default'
 ))
 fileApp.config.from_object(__name__)
+
 
 #DATABASE COMMANDS
 def connect_db():
@@ -43,6 +50,31 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
+#File upload and download
+
+#POST file to server
+def clientUpload(filename, inputUserName):
+    os.chdir(expanduser("~/onedir"))
+    f = ' filedata=@'
+    g = f + filename
+    #os.system('curl -F'+ g +' http://172.25.203.190:8080/') #TODO: verify that this works between same OS's
+
+    #Update the file list for that user
+    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    fileList = updateCurs.fetchone()[0]
+    if fileList is None:
+        fileList = filename + ';'
+    elif not filename in fileList:
+        fileList += filename +';'
+    get_db().execute("UPDATE user_account SET files =? WHERE username =?", (fileList, inputUserName,))
+    get_db().commit()
+
+
+#pass in username as well so that the DB can verify the user can make this request
+def clientDownload(filename):
+    #TODO: authenticate with server
+    os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/onedir/' + filename )
+
 
 @manager.command
 def start():
@@ -52,7 +84,7 @@ def start():
 
     inputNew = raw_input("Are you a new user? y/n ")
 
-    if (inputNew == 'Y' or inputNew == 'y' or inputNew == 'yes' or inputNew == 'Yes'):
+    if inputNew == 'Y' or inputNew == 'y' or inputNew == 'yes' or inputNew == 'Yes':
         newUserName = raw_input("Please enter the user name you would like. ")
         newPassword = raw_input("Please enter the password you would like. ")
         createNewAccount(newUserName, newPassword, db)
@@ -63,7 +95,8 @@ def start():
         inputPassword = raw_input("Password: ")
 
         cur = db.execute("SELECT username FROM user_account where username =?", (inputUserName,))
-        cur2 = db.execute("SELECT password FROM user_account where password =? and username =?", (inputPassword, inputUserName))
+        cur2 = db.execute("SELECT password FROM user_account where password =? and username =?",
+                          (inputPassword, inputUserName))
 
         entries = cur.fetchall()
         entries2 = cur2.fetchall()
@@ -73,13 +106,25 @@ def start():
         else:
             finalUserName = inputUserName
 
+    #When starting up the user commands, create the onedir folder if it doesn't already exist
+    if not os.path.exists(expanduser("~") + '/onedir'):
+        os.makedirs(expanduser("~") + '/onedir')
+
+    #Get user type (file or admin)
+    cur = db.execute("SELECT user_type FROM user_account where username =?", (finalUserName,))
+    type = cur.fetchone()[0]
+
+    #Before beginning, update your files to the server (local copies override server copies)
+    if type == 'normal':
+        for file in os.listdir(expanduser("~/onedir")):
+            clientUpload(file, finalUserName)
+
     opt = 22
 
     while (opt != 0):
-        cur = db.execute("SELECT user_type FROM user_account where username =?", (finalUserName,))
-        type = cur.fetchone()[0]
-
         if type == 'normal': #show file user options
+            #TODO: kick off watchdog processes here; upload, download, etc (in a separate thread)
+
             print '''
             FILE USER OPTIONS
 
@@ -134,7 +179,6 @@ def createNewAccount(newUserName, newPassword, db):
     db.commit()
 
 
-
 def shareFile():
     print "This is how you would share files"
 
@@ -162,14 +206,13 @@ def changeSystem():
 def viewUserInfo():
     print "This is how you would view current user information"
 
+
 def viewFileSystem():
     print "This is how you would view the file system"
 
 
 def viewReportLog():
     print "This is how you would view a report log of system access"
-
-
 
 
 if __name__ == '__main__':
