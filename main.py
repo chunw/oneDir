@@ -5,7 +5,7 @@ from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, g
 from os.path import expanduser
 import os
-import server
+import server, client
 
 #Where he client knows to look for the folder
 #serverURL = 'http://172.25.107.209:8080/'
@@ -17,7 +17,7 @@ manager = Manager(fileApp)
 
 # Load default config and override config from an environment variable
 fileApp.config.update(dict(
-    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/home/student/PycharmProjects/OneDir2/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -57,7 +57,7 @@ def clientUpload(filename, inputUserName):
     os.chdir(expanduser("~/onedir"))
     f = ' filedata=@'
     g = f + filename
-    #os.system('curl -F'+ g +' http://172.25.203.190:8080/') #TODO: verify that this works between same OS's
+    os.system('curl -F'+ g +' http://172.25.203.58:8080/') #TODO: verify that this works between same OS's
 
     #Update the file list for that user
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
@@ -73,7 +73,7 @@ def clientUpload(filename, inputUserName):
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(filename):
     #TODO: authenticate with server
-    os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/onedir/' + filename )
+    os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/onedir/' + filename)
 
 
 @manager.command
