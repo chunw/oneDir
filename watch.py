@@ -10,8 +10,8 @@ from watchdog.events import PatternMatchingEventHandler
 
 # configs
 home = expanduser("~")
-UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-SERVER_URL = 'http://172.25.107.209:8080/'
+UPLOAD_FOLDER = home + '/onedir'  # assume client user has a dir called uploads under home dir
+SERVER_URL = 'http://172.25.203.58:8080/'
 
 
 class MyEventHandler(PatternMatchingEventHandler):
@@ -24,7 +24,7 @@ class MyEventHandler(PatternMatchingEventHandler):
             print (op, event.is_directory, event.src_path)
 
     def parse_filename(self,file_path):
-        temp = file_path.split("uploads/")
+        temp = file_path.split("onedir/")
         return temp[1]
 
     def delete(self, filename):

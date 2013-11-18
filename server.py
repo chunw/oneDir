@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from os.path import expanduser
 
 home = expanduser("~")
-UPLOAD_FOLDER = home + '/uploads'
+UPLOAD_FOLDER = home + '/onedir'
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'py', 'cpp', 'h', 'java', 'doc'])
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
@@ -27,18 +27,19 @@ def upload_file():
             # let client know about this update
 
 
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form action="" method=post enctype=multipart/form-data>
-    <p><input type=file name=file>
-    <input type=submit value=Upload>
-    </form>
-     '''
+    return 'Upload Successful'
+    #'''
+    #<!doctype html>
+    #<title>Upload new File</title>
+    #<h1>Upload new File</h1>
+    #<form action="" method=post enctype=multipart/form-data>
+    #<p><input type=file name=file>
+    #<input type=submit value=Upload>
+    #</form>
+    # '''
 
 # view files uploaded to UPLOAD_FOLDER
-@fileApp.route('/uploads/<filename>')
+@fileApp.route('/onedir/<filename>')
 def uploaded_files(filename):
     return send_from_directory(fileApp.config['UPLOAD_FOLDER'], filename)
 
