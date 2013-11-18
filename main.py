@@ -5,19 +5,20 @@ from sqlite3 import dbapi2 as sqlite3
 from flask import Flask, g
 from os.path import expanduser
 import os
-import server, client
+import watch
+import time
 
 #Where he client knows to look for the folder
-#serverURL = 'http://172.25.107.209:8080/'
-serverURL = 'http://0.0.0.0:8080'
+serverURL = 'http://172.25.203.58:8080/'
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
 manager = Manager(fileApp)
 
 # Load default config and override config from an environment variable
+#TODO: Does this need to be local or on the server?
 fileApp.config.update(dict(
-    DATABASE='/home/student/PycharmProjects/OneDir2/OneDir_accounts.db',
+    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -52,6 +53,9 @@ def close_db(error):
 
 #File upload and download
 
+#TODO: can create a file directly in onedir
+#TODO: can handle uploads when file has a space in its name (server OR file string)
+
 #POST file to server
 def clientUpload(filename, inputUserName):
     os.chdir(expanduser("~/onedir"))
@@ -72,7 +76,7 @@ def clientUpload(filename, inputUserName):
 
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(filename):
-    #TODO: authenticate with server
+    #TODO: authenticate with server (make sure user can download)
     os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/onedir/' + filename)
 
 
@@ -107,8 +111,8 @@ def start():
             finalUserName = inputUserName
 
     #When starting up the user commands, create the onedir folder if it doesn't already exist
-    if not os.path.exists(expanduser("~") + '/onedir'):
-        os.makedirs(expanduser("~") + '/onedir')
+    if not os.path.exists(expanduser("~/onedir")):
+        os.makedirs(expanduser("~/onedir"))
 
     #Get user type (file or admin)
     cur = db.execute("SELECT user_type FROM user_account where username =?", (finalUserName,))
@@ -118,13 +122,16 @@ def start():
     if type == 'normal':
         for file in os.listdir(expanduser("~/onedir")):
             clientUpload(file, finalUserName)
+    #Start watchdog
+        observer = watch.Observer()
+        event_handler = watch.MyEventHandler()
+        observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
+        observer.start()
 
     opt = 22
 
     while (opt != 0):
         if type == 'normal': #show file user options
-            #TODO: kick off watchdog processes here; upload, download, etc (in a separate thread)
-
             print '''
             FILE USER OPTIONS
 
@@ -171,6 +178,10 @@ def start():
                 viewReportLog()
             if opt == 7:
                 changePassword()
+
+    #Stop watching files
+    observer.stop()
+    observer.join()
 
 
 def createNewAccount(newUserName, newPassword, db):

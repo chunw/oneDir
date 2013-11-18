@@ -2,6 +2,7 @@ __author__ = 'marlenakauer'
 
 from flask import Flask
 import os
+from os.path import expanduser
 
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
@@ -9,9 +10,10 @@ SERVER_URL = 'http://172.25.203.58:8080/'
 
 #POST file to server
 def clientUpload(filename):
+    os.chdir(expanduser("~/onedir"))
     f = ' filedata=@'
     g = f + filename
-    os.system('curl -F' + g + ' ' + SERVER_URL)
+    os.system('curl -F'+ g +' http://172.25.203.58:8080/')
 
 #create method on client side that will create uploads or onedir folder if none exists
 
