@@ -9,7 +9,7 @@ import watch
 import time
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.203.58:8080/'
+serverURL = 'http://172.25.109.164:8080/'
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -55,13 +55,16 @@ def close_db(error):
 
 #TODO: can create a file directly in onedir
 #TODO: can handle uploads when file has a space in its name (server OR file string)
+#TODO: try returning a blank string on server call (instead of successful download)
+#TODO: change calls to fileUpload to client.fileUpload (import client)
+#TODO: update file list for user after watchdog upload occurs
 
 #POST file to server
 def clientUpload(filename, inputUserName):
     os.chdir(expanduser("~/onedir"))
     f = ' filedata=@'
     g = f + filename
-    os.system('curl -F'+ g +' http://172.25.203.58:8080/') #TODO: verify that this works between same OS's
+    os.system('curl -F'+ g +' http://172.25.109.164:8080/') #TODO: verify that this works between same OS's
 
     #Update the file list for that user
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
@@ -120,6 +123,7 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
+    #TODO: change this to download
         for file in os.listdir(expanduser("~/onedir")):
             clientUpload(file, finalUserName)
     #Start watchdog
@@ -180,8 +184,9 @@ def start():
                 changePassword()
 
     #Stop watching files
-    observer.stop()
-    observer.join()
+    if type == 'normal':
+        observer.stop()
+        observer.join()
 
 
 def createNewAccount(newUserName, newPassword, db):
