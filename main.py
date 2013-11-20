@@ -9,14 +9,14 @@ import watch
 import time
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.109.164:8080/'
+serverURL = 'http://172.25.203.189:8080/'
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
 manager = Manager(fileApp)
 
 # Load default config and override config from an environment variable
-#TODO: Does this need to be local or on the server?
+#TODO: This needs to be on the server
 fileApp.config.update(dict(
     DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
@@ -58,18 +58,63 @@ def close_db(error):
 #TODO: try returning a blank string on server call (instead of successful download)
 #TODO: change calls to fileUpload to client.fileUpload (import client)
 #TODO: update file list for user after watchdog upload occurs
+#TODO: check allowed extensions before uploading
+#TODO: maybe move the .db file over to server.py?
+
+#@param: database string of files, and file to find
+#@return: returns a boolean value based on whether or not the user has this file
+#use this method to verify if user can view a file, sharing, etc
+def findFile(dbstring, fname):
+    fList = dbstring.split(';')
+    for i in fList:
+        if i == fname:
+            return True
+        else:
+            return False
+
+#@param: database string of files, and file to remove
+#@return: returns the new string of files with the file removed to put back in db
+#use this method when you want to remove a file from a user's associated files in the db
+def removeFile(dbstring, fname):
+    fList = dbstring.split(';')
+    fList.remove(fname)
+    newList = []
+    for i in fList:
+        x =  i + ';'
+        newList.append(x)
+    newString = ''.join(newList)
+    return newString
+
+#@param: database string of files
+#@return: return the new string of files as a parseable list
+def parseList(dbstring):
+    return dbstring.split(';')
+
+
+#@param: database string of files, and file to remove
+#@return: returns the new string of files with the file added to put back in db
+#use this method when you want to add a file to a user's associated files in the db
+def addFile(dbstring, fname):
+    fList = dbstring.split(';')
+    fList.append(fname)
+    newList = []
+    for i in fList:
+        x = i + ';'
+        newList.append(x)
+    newString = ''.join(newList)
+    return newString
 
 #POST file to server
 def clientUpload(filename, inputUserName):
     os.chdir(expanduser("~/onedir"))
     f = ' filedata=@'
     g = f + filename
-    os.system('curl -F'+ g +' http://172.25.109.164:8080/') #TODO: verify that this works between same OS's
+    os.system('curl -F'+ g +' http://172.25.203.189:8080/')
 
     #Update the file list for that user
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
-    if fileList is None:
+    if fileList is None and not filename.contains('~'):
         fileList = filename + ';'
     elif not filename in fileList:
         fileList += filename +';'
@@ -78,9 +123,14 @@ def clientUpload(filename, inputUserName):
 
 
 #pass in username as well so that the DB can verify the user can make this request
-def clientDownload(filename):
-    #TODO: authenticate with server (make sure user can download)
-    os.system('curl ' + serverURL + 'uploads/'+ filename + ' > ~/onedir/' + filename)
+def clientDownload(inputUserName):
+    #Update the files listed for user
+    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    fileList = updateCurs.fetchone()[0]
+    if fileList is not None:
+        fileList = parseList(fileList)
+        for filename in fileList:
+            os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
 @manager.command
@@ -123,9 +173,7 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
-    #TODO: change this to download
-        for file in os.listdir(expanduser("~/onedir")):
-            clientUpload(file, finalUserName)
+        clientDownload(finalUserName)
     #Start watchdog
         observer = watch.Observer()
         event_handler = watch.MyEventHandler()
