@@ -9,7 +9,8 @@ import watch
 import time
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.203.189:8080/'
+serverURL = 'http://172.25.179.70:8080/'
+client = None
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -18,7 +19,8 @@ manager = Manager(fileApp)
 # Load default config and override config from an environment variable
 #TODO: This needs to be on the server
 fileApp.config.update(dict(
-    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -51,14 +53,11 @@ def close_db(error):
     if hasattr(g, 'sqlite_db'):
         g.sqlite_db.close()
 
-#File upload and download
-
-#TODO: can create a file directly in onedir
+#TODO: can create a file directly in onedir -> check allowed extensions before uploading
 #TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: try returning a blank string on server call (instead of successful download)
 #TODO: change calls to fileUpload to client.fileUpload (import client)
-#TODO: update file list for user after watchdog upload occurs
-#TODO: check allowed extensions before uploading
+#TODO: update file list for user after watchdog upload occurs -> auto-downloading
 #TODO: maybe move the .db file over to server.py?
 
 #@param: database string of files, and file to find
@@ -95,14 +94,19 @@ def parseList(dbstring):
 #@return: returns the new string of files with the file added to put back in db
 #use this method when you want to add a file to a user's associated files in the db
 def addFile(dbstring, fname):
+    if dbstring is None:
+        dbstring = ""
     fList = dbstring.split(';')
-    fList.append(fname)
-    newList = []
-    for i in fList:
-        x = i + ';'
-        newList.append(x)
-    newString = ''.join(newList)
-    return newString
+    if fname in fList: # if the filename already exists, do thing
+        return dbstring
+    else:
+        fList.append(fname)
+        newList = []
+        for i in fList:
+            x = i + ';'
+            newList.append(x)
+        newString = ''.join(newList)
+        return newString
 
 #POST file to server
 def clientUpload(filename, inputUserName):
@@ -173,8 +177,12 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
+        #print ("client", client)
         clientDownload(finalUserName)
-    #Start watchdog
+        #client = finalUserName
+        #print ("client",client)
+
+        #Start watchdog
         observer = watch.Observer()
         event_handler = watch.MyEventHandler()
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
@@ -245,6 +253,25 @@ def createNewAccount(newUserName, newPassword, db):
 
 def shareFile():
     print "This is how you would share files"
+    filename = raw_input("Which file to share? >> ").lstrip()
+    if not os.path.isfile(expanduser("~") + "/onedir/" + filename):
+        print "Oops, file does not exist."
+        return
+    username = raw_input("Who to share with? >> ").lstrip()
+    cur = get_db().execute("SELECT username FROM user_account where username =?", (username,))
+    entries = cur.fetchall()
+    if len(entries) == 0:
+        print "Oops, user does not exist."
+        return
+
+    # NOTE: the other user need to restart the onedir program to see this file.
+    # If the filename has existed in that user's onedir, this method will overwrite it.
+    #filelist = ""
+    cur2 = get_db().execute("SELECT files FROM user_account where username =?", (username,))
+    filelist = cur2.fetchone()[0]
+    get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+    get_db().commit()
+    print("File sent to " + username + "!")
 
 
 def changePassword():
