@@ -3,14 +3,15 @@ import os
 import sys
 import time
 import logging
+import client
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 
-# Configs
+# configs
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/uploads'  # assume client user has a dir called uploads under home dir
-SERVER_URL = 'http://localhost:5000'  #http://1455d817.ngrok.com
+SERVER_URL = 'http://172.25.107.209:8080/'
 
 
 class MyEventHandler(PatternMatchingEventHandler):
@@ -26,12 +27,6 @@ class MyEventHandler(PatternMatchingEventHandler):
         temp = file_path.split("uploads/")
         return temp[1]
 
-    def download(self, filename):
-        print "Syncing ..."
-        os.system("curl http://1455d817.ngrok.com/uploads/hi5.txt > ~/uploads/hi3.txt")
-
-        #download = "curl http://127.0.0.1:5000/uploads/"+filename + " > " + UPLOAD_FOLDER+"/"+filename
-
     def delete(self, filename):
         # delete file on client machine
         return
@@ -40,7 +35,7 @@ class MyEventHandler(PatternMatchingEventHandler):
         # event.is_directory is correct
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
-        self.download(filename)
+        client.clientUpload(filename)
 
     def on_deleted(self, event):
         # event.is_directory is correct
@@ -58,11 +53,11 @@ class MyEventHandler(PatternMatchingEventHandler):
                 op_file_path = max(files_in_dir, key=os.path.getmtime)
                 print ("MOD", op_file_path)
                 filename = self.parse_filename(event.src_path)
-                self.download(filename)
+                client.clientUpload(filename)
 
 if __name__ == "__main__":
 
-    # Format console logs.
+    # Format console logs
     logging.basicConfig(level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
