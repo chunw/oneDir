@@ -26,14 +26,24 @@ class MyEventHandler(PatternMatchingEventHandler):
 
     def catch_all(self, event, op):
         if not self.ignore_pattern in event.src_path:
-            print (op, event.is_directory, event.src_path)
+            print (op, event.src_path)
 
     def parse_filename(self,file_path):
         temp = file_path.split("onedir/")
         return temp[1]
 
-    def delete(self, filename):
-        #TODO delete file on client machine by removing filename from client in database
+    def update_db(self, filename, op):
+        """ update filelist for client in database """
+        username = self.clientName
+        cur2 = main.get_db().execute("SELECT files FROM user_account where username =?", (username,))
+        filelist = cur2.fetchone()[0]
+        if op == 'add':
+            main.get_db().execute("UPDATE user_account SET files='" + main.removeFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+        if op == 'del':
+            main.get_db().execute("UPDATE user_account SET files='" + main.removeFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+        main.get_db().commit()
         return
 
     def on_created(self, event):
@@ -41,10 +51,13 @@ class MyEventHandler(PatternMatchingEventHandler):
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
         client.clientUpload(filename)
+        self.update_db(filename, 'add')
 
     def on_deleted(self, event):
         # event.is_directory is correct
         self.catch_all(event, 'DEL')
+        filename = self.parse_filename(event.src_path)
+        self.update_db(filename, 'del')
 
     def on_modified(self, event):
         # Note: event.is_directory is True for both files and folders

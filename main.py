@@ -74,13 +74,16 @@ def findFile(dbstring, fname):
 #use this method when you want to remove a file from a user's associated files in the db
 def removeFile(dbstring, fname):
     fList = dbstring.split(';')
-    fList.remove(fname)
-    newList = []
-    for i in fList:
-        x =  i + ';'
-        newList.append(x)
-    newString = ''.join(newList)
-    return newString
+    if not fname in fList:  # if filename is not in filelist, do nothing
+        return dbstring
+    else:
+        fList.remove(fname)
+        newList = []
+        for i in fList:
+            x =  i + ';'
+            newList.append(x)
+        newString = ''.join(newList)
+        return newString
 
 #@param: database string of files
 #@return: return the new string of files as a parseable list
@@ -95,7 +98,7 @@ def addFile(dbstring, fname):
     if dbstring is None:
         dbstring = ""
     fList = dbstring.split(';')
-    if fname in fList: # if the filename already exists, do thing
+    if fname in fList: # if the filename already exists, do nothing
         return dbstring
     else:
         fList.append(fname)
@@ -111,7 +114,7 @@ def clientUpload(filename, inputUserName):
     os.chdir(expanduser("~/onedir"))
     f = ' filedata=@'
     g = f + filename
-    os.system('curl -F'+ g +' http://172.25.203.189:8080/')
+    os.system('curl -F' + g + ' ' + serverURL)
 
     #Update the file list for that user
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
@@ -254,11 +257,11 @@ def createNewAccount(newUserName, newPassword, db):
 
 def shareFile():
     print "This is how you would share files"
-    filename = raw_input("Which file to share? >> ").lstrip()
+    filename = raw_input("Which file to share? >> ").strip()
     if not os.path.isfile(expanduser("~") + "/onedir/" + filename):
         print "Oops, file does not exist."
         return
-    username = raw_input("Who to share with? >> ").lstrip()
+    username = raw_input("Who to share with? >> ").strip()
     cur = get_db().execute("SELECT username FROM user_account where username =?", (username,))
     entries = cur.fetchall()
     if len(entries) == 0:
