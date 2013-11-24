@@ -3,6 +3,7 @@ from flask import Flask, request
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
 from os.path import expanduser
+import socket
 
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/onedir'
@@ -15,7 +16,6 @@ fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
-
 # save files uploaded to this route to UPLOAD_FOLDER
 @fileApp.route('/', methods=['GET', 'POST'])
 def upload_file():
@@ -24,7 +24,6 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(fileApp.config['UPLOAD_FOLDER'], filename))
-            # let client know about this update
 
 
     return 'Upload Successful'
@@ -45,4 +44,4 @@ def uploaded_files(filename):
 
 
 if __name__ == '__main__':
-    fileApp.run(host='0.0.0.0', port=8080, debug=True)
+    fileApp.run(host='0.0.0.0', port=8080, debug=True) #TODO replace local server with a real app url -> Heroku?

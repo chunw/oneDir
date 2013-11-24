@@ -6,11 +6,9 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
-import time
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.179.70:8080/'
-client = None
+serverURL = 'http://172.25.179.70:8080/'  #TODO replace local server with a real app url -> Heroku?
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -137,6 +135,11 @@ def clientDownload(inputUserName):
             os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
+def getServerURL():
+    """ client-side getter for server url """
+    return serverURL
+
+
 @manager.command
 def start():
     "Kick off the user command line interface."
@@ -175,16 +178,14 @@ def start():
     cur = db.execute("SELECT user_type FROM user_account where username =?", (finalUserName,))
     type = cur.fetchone()[0]
 
+
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
-        #print ("client", client)
         clientDownload(finalUserName)
-        #client = finalUserName
-        #print ("client",client)
 
         #Start watchdog
         observer = watch.Observer()
-        event_handler = watch.MyEventHandler()
+        event_handler = watch.MyEventHandler(finalUserName, serverURL)
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
         observer.start()
 

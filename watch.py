@@ -1,23 +1,28 @@
+__author__ = 'Chun'
+
 from os.path import expanduser
 import os
 import sys
 import time
 import logging
 import client
+import main
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 
 # configs
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/onedir'  # assume client user has a dir called uploads under home dir
-SERVER_URL = 'http://172.25.203.58:8080/'
-
 
 class MyEventHandler(PatternMatchingEventHandler):
     """ customized file system event handler
     """
-    ignore_pattern = ".DS_Store"
+
+    def __init__(self, client_name, server_url):
+        super(PatternMatchingEventHandler, self).__init__()
+        self.clientName = client_name
+        self.serverUrl = server_url
+        #self.ignore_pattern = ".DS_Store"
 
     def catch_all(self, event, op):
         if not self.ignore_pattern in event.src_path:
@@ -28,7 +33,7 @@ class MyEventHandler(PatternMatchingEventHandler):
         return temp[1]
 
     def delete(self, filename):
-        # delete file on client machine
+        #TODO delete file on client machine by removing filename from client in database
         return
 
     def on_created(self, event):
