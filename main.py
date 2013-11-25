@@ -20,7 +20,7 @@ finalUserName = ''
 #TODO: This needs to be on the server
 fileApp.config.update(dict(
     #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
-    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/home/student/PycharmProjects/OneDir2/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -241,7 +241,7 @@ def start():
             if opt == 1 and autosync is True:
                 shareFile()
             if opt == 2 and autosync is True:
-                changePassword()
+                changePassword(finalUserName, db)
             if opt == 3 and autosync is True:
                 autosync = False
                 observer.stop()
@@ -264,7 +264,7 @@ def start():
                     shareFile()
 
                 if optOff == 2:
-                    changePassword()
+                    changePassword(finalUserName, db)
 
                 if optOff == 3:
                     autosync = True
@@ -304,19 +304,19 @@ def start():
             while opt < 0 or opt > 7 or not isinstance(opt, int):
                 opt = input("That is an invalid option, please re-try. ")
             if opt == 1:
-                deleteUser()
+                deleteUser(db)
             if opt == 2:
-                changePasswordAsAdmin()
+                changePasswordAsAdmin(db)
             if opt == 3:
                 changeSystem()
             if opt == 4:
-                viewUserInfo()
+                viewUserInfo(db)
             if opt == 5:
                 viewFileSystem()
             if opt == 6:
                 viewReportLog()
             if opt == 7:
-                changePassword()
+                changePassword(finalUserName, db)
 
     #Stop watching files
     if type == 'normal':
@@ -353,29 +353,43 @@ def shareFile():
     print("File sent to " + username + "!")
 
 
-def changePassword():
-    print "This is how you would change your password"
-
+def changePassword(finalUserName, db):
+    newPassword = raw_input("Please enter the new password you want to change to: ")
+    db.cursor().execute('''UPDATE user_account SET password = ? WHERE username = (?) ''', (newPassword, finalUserName, ))
+    db.commit()
 
 def changeSynch():
     print "This is how you would change the autosynch settings"
 
 
-def deleteUser():
-    print "This is how you would delete a user"
+def deleteUser(db):
+    deletedUserName = raw_input("Please enter the username you want to delete: ")
+    db.cursor().execute('''DELETE FROM user_account WHERE username = (?) ''', (deletedUserName,))
+    db.commit()
 
 
-def changePasswordAsAdmin():
-    print "This is how the admin user would change a user's password"
+def changePasswordAsAdmin(db):
+    changedUserName = raw_input("Please enter the username whose password you want you change: ")
+    newPassword = raw_input("Please enter the new password you want to change to: ")
+    db.cursor().execute("UPDATE user_account SET password = (?) WHERE username = (?)", (newPassword, changedUserName, ))
+    db.commit()
 
 
 def changeSystem():
     print "This is how you would start or stop the system"
 
 
-def viewUserInfo():
-    print "This is how you would view current user information"
-
+def viewUserInfo(db):
+    userInfoName = raw_input("Please enter the username you want to view: ")
+    cur = db.execute("SELECT username FROM user_account where username =?", (userInfoName,))
+    cur1 = db.execute("SELECT password FROM user_account where username =?", (userInfoName,))
+    cur2 = db.execute("SELECT files FROM user_account where username =?", (userInfoName,))
+    type = cur.fetchone()[0]
+    type1 = cur1.fetchone()[0]
+    type2 = cur2.fetchone()[0]
+    print 'username: ' + type
+    print 'password: ' + type1
+    viewFiles(type2)
 
 def viewFileSystem():
     print "This is how you would view the file system"
@@ -383,6 +397,13 @@ def viewFileSystem():
 
 def viewReportLog():
     print "This is how you would view a report log of system access"
+
+
+def viewFiles(dbstring):
+    print 'files: '
+    fList = dbstring.split(';')
+    for i in fList:
+        print i
 
 
 if __name__ == '__main__':
