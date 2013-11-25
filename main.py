@@ -19,8 +19,7 @@ finalUserName = ''
 # Load default config and override config from an environment variable
 #TODO: This needs to be on the server
 fileApp.config.update(dict(
-    #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
-    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
+    DATABASE='OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -270,7 +269,6 @@ def start():
                     autosync = True
                     # TODO
                     # observer.start()
-
 
                 if optOff == 4:
                     fname = input("Please enter the file name.")

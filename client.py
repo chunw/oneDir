@@ -2,23 +2,24 @@ __author__ = 'marlenakauer'
 
 from flask import Flask
 import os
+import server
 import main
 from os.path import expanduser
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 
-#POST file to server
 def clientUpload(filename):
+    """ POST file to server """
     os.chdir(expanduser("~/onedir"))
-    f = ' filedata=@'
-    g = f + filename
-    os.system('curl -F' + g + ' ' + main.getServerURL())
+    if server.allowed_file(filename):   # check file extension before uploading the file
+        f = ' filedata=@'
+        g = f + filename
+        os.system('curl -F' + g + ' ' + main.getServerURL())
 
-#pass in username as well so that the DB can verify the user can make this request
+
 def clientDownload(filename):
-    #check with database that user can download this file
+    # TODO clean this method off
     os.system('curl ' + main.getServerURL() + 'onedir/' + filename + ' > ~/onedir/' + filename )
 
 if __name__ == '__main__':
-    #clientUpload('inlab9.txt')
-    clientDownload('hi4.txt')
+    print "I am a happy client!"
