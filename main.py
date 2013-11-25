@@ -8,11 +8,13 @@ import os
 import watch
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.179.70:8080/'  #TODO replace local server with a real app url -> Heroku?
+serverURL = 'http://172.25.99.84:8080/'  #TODO replace local server with a real app url -> Heroku?
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
 manager = Manager(fileApp)
+
+finalUserName = ''
 
 # Load default config and override config from an environment variable
 #TODO: This needs to be on the server
@@ -25,6 +27,9 @@ fileApp.config.update(dict(
     PASSWORD='default'
 ))
 fileApp.config.from_object(__name__)
+
+def getUsername():
+    return finalUserName
 
 
 #DATABASE COMMANDS
@@ -135,7 +140,8 @@ def clientDownload(inputUserName):
     if fileList is not None:
         fileList = parseList(fileList)
         for filename in fileList:
-            os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+            if filename is not '': #TODO: make it so the actual parser works better (no semicolon at beginning)
+                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
 def clientDownloadOff(inputUserName):
@@ -172,7 +178,6 @@ def update_db(filename, username, op):
 def start():
     "Kick off the user command line interface."
     db = get_db()
-    finalUserName = ''
 
     inputNew = raw_input("Are you a new user? y/n ")
 
@@ -296,7 +301,7 @@ def start():
             7) Change your password
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
-            while opt < 0 or opt > 6 or not isinstance(opt, int):
+            while opt < 0 or opt > 7 or not isinstance(opt, int):
                 opt = input("That is an invalid option, please re-try. ")
             if opt == 1:
                 deleteUser()
