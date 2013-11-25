@@ -17,8 +17,8 @@ manager = Manager(fileApp)
 # Load default config and override config from an environment variable
 #TODO: This needs to be on the server
 fileApp.config.update(dict(
-    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
-    #DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
+    #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -218,7 +218,7 @@ def start():
         observer.start()
 
     opt = 22
-
+    autosync = True
     while (opt != 0):
         if type == 'normal': #show file user options
             print '''
@@ -229,14 +229,59 @@ def start():
             3) Turn auto synch on or off
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
-            while opt < 0 or opt > 3 or not isinstance(opt, int):
+
+            while opt < 0 or opt > 4 or not isinstance(opt, int):
                 opt = input("That is an invalid option, please re-try. ")
-            if opt == 1:
+
+            if opt == 1 and autosync is True:
                 shareFile()
-            if opt == 2:
+            if opt == 2 and autosync is True:
                 changePassword()
-            if opt == 3:
-                changeSynch()
+            if opt == 3 and autosync is True:
+                autosync = False
+                observer.stop()
+
+                print '''
+                   FILE USER OPTIONS
+
+                1) Share a file
+                2) Change password
+                3) Turn auto sync on
+                4) Upload a file
+                5) Download a file
+
+                Entering 0 will still exit the program
+
+                '''
+                optOff = input("Please enter an option you want to do or '0' to quit.")
+
+                if optOff == 1:
+                    shareFile()
+
+                if optOff == 2:
+                    changePassword()
+
+                if optOff == 3:
+                    autosync = True
+                    # TODO
+                    # observer.start()
+
+
+                if optOff == 4:
+                    fname = input("Please enter the file name.")
+                    clientUpload(fname, finalUserName)
+
+                if optOff == 5:
+                    clientDownloadOff(finalUserName)
+
+                if optOff == 0:
+                    opt = 0
+
+                else:
+                    print "You have entered an invalid option."
+
+    #end of autosync code
+
 
         elif type == 'admin': #show admin user options
             print '''
