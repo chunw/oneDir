@@ -1,14 +1,14 @@
 __author__ = 'Chris'
 
 from flask.ext.script import Manager
-from sqlite3 import dbapi2 as sqlite3
-from flask import Flask, g, current_app
+from flask import Flask
 from os.path import expanduser
 import os
 import watch
+import server
+import client
 
 #Where he client knows to look for the folder
-serverURL = 'http://172.25.99.84:8080/'  #TODO replace local server with a real app url -> Heroku?
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -17,44 +17,10 @@ manager = Manager(fileApp)
 finalUserName = ''
 
 # Load default config and override config from an environment variable
-#TODO: This needs to be on the server
-fileApp.config.update(dict(
-    #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
-    DATABASE='/home/student/PycharmProjects/OneDir2/OneDir_accounts.db',
-    DEBUG=True,
-    SECRET_KEY='development key',
-    USERNAME='admin',
-    PASSWORD='default'
-))
-fileApp.config.from_object(__name__)
 
 def getUsername():
     return finalUserName
 
-
-#DATABASE COMMANDS
-def connect_db():
-    """Connects to the specific database."""
-    rv = sqlite3.connect(fileApp.config['DATABASE'])
-    rv.text_factory = str
-    rv.row_factory = sqlite3.Row
-    return rv
-
-
-def get_db():
-    """Opens a new database connection if there is none yet for the
-    current application context.
-    """
-    if not hasattr(g, 'sqlite_db'):
-        g.sqlite_db = connect_db()
-    return g.sqlite_db
-
-
-@fileApp.teardown_appcontext
-def close_db(error):
-    """Closes the database again at the end of the request."""
-    if hasattr(g, 'sqlite_db'):
-        g.sqlite_db.close()
 
 #TODO: can create a file directly in onedir -> check allowed extensions before uploading
 #TODO: can handle uploads when file has a space in its name (server OR file string)
@@ -74,21 +40,6 @@ def findFile(dbstring, fname):
         else:
             return False
 
-#@param: database string of files, and file to remove
-#@return: returns the new string of files with the file removed to put back in db
-#use this method when you want to remove a file from a user's associated files in the db
-def removeFile(dbstring, fname):
-    fList = dbstring.split(';')
-    if not fname in fList:  # if filename is not in filelist, do nothing
-        return dbstring
-    else:
-        fList.remove(fname)
-        newList = []
-        for i in fList:
-            x =  i + ';'
-            newList.append(x)
-        newString = ''.join(newList)
-        return newString
 
 #@param: database string of files
 #@return: return the new string of files as a parseable list
@@ -99,85 +50,19 @@ def parseList(dbstring):
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file added to put back in db
 #use this method when you want to add a file to a user's associated files in the db
-def addFile(dbstring, fname):
-    if dbstring is None:
-        dbstring = ""
-    fList = dbstring.split(';')
-    if fname in fList: # if the filename already exists, do nothing
-        return dbstring
-    else:
-        fList.append(fname)
-        newList = []
-        for i in fList:
-            x = i + ';'
-            newList.append(x)
-        newString = ''.join(newList)
-        return newString
-
-#POST file to server
-def clientUpload(filename, inputUserName):
-    os.chdir(expanduser("~/onedir"))
-    f = ' filedata=@'
-    g = f + filename
-    os.system('curl -F' + g + ' ' + serverURL)
-
-    #Update the file list for that user
-    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
-    fileList = updateCurs.fetchone()[0]
-    if fileList is None and not filename.contains('~'):
-        fileList = filename + ';'
-    elif not filename in fileList:
-        fileList += filename +';'
-    get_db().execute("UPDATE user_account SET files =? WHERE username =?", (fileList, inputUserName,))
-    get_db().commit()
-
-
-#pass in username as well so that the DB can verify the user can make this request
-def clientDownload(inputUserName):
-    #Update the files listed for user
-    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
-    fileList = updateCurs.fetchone()[0]
-    if fileList is not None:
-        fileList = parseList(fileList)
-        for filename in fileList:
-            if filename is not '': #TODO: make it so the actual parser works better (no semicolon at beginning)
-                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
-
-
 def clientDownloadOff(inputUserName):
-    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    updateCurs = server.get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
-        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl ' + client.getServerURL() + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
     else:
         print "Sorry, you do not have permission to download this file."
-
-
-def getServerURL():
-    """ client-side getter for server url """
-    return serverURL
-
-def update_db(filename, username, op):
-        """ update filelist for client in database """
-        app = Flask(__name__)
-        with app.app_context():
-            db = get_db()
-            cur2 = db.execute("SELECT files FROM user_account where username =?", (username,))
-            filelist = cur2.fetchone()[0]
-            if op == 'add':
-                db.execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
-
-            if op == 'del':
-                db.execute("UPDATE user_account SET files='" + removeFile(filelist, filename) + "' WHERE username='" + username + "'")
-
-            db.commit()
-            return
 
 @manager.command
 def start():
     "Kick off the user command line interface."
-    db = get_db()
+    db = server.get_db()
 
     inputNew = raw_input("Are you a new user? y/n ")
 
@@ -214,11 +99,11 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
-        clientDownload(finalUserName)
+        client.clientDownload(finalUserName)
 
         #Start watchdog
         observer = watch.Observer()
-        event_handler = watch.MyEventHandler(finalUserName, serverURL)
+        event_handler = watch.MyEventHandler(finalUserName, client.getServerURL())
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
         observer.start()
 
@@ -274,7 +159,7 @@ def start():
 
                 if optOff == 4:
                     fname = input("Please enter the file name.")
-                    clientUpload(fname, finalUserName)
+                    client.clientUpload(fname, finalUserName)
 
                 if optOff == 5:
                     clientDownloadOff(finalUserName)
@@ -337,7 +222,7 @@ def shareFile():
         print "Oops, file does not exist."
         return
     username = raw_input("Who to share with? >> ").strip()
-    cur = get_db().execute("SELECT username FROM user_account where username =?", (username,))
+    cur = server.get_db().execute("SELECT username FROM user_account where username =?", (username,))
     entries = cur.fetchall()
     if len(entries) == 0:
         print "Oops, user does not exist."
@@ -346,10 +231,10 @@ def shareFile():
     # NOTE: the other user need to restart the onedir program to see this file.
     # If the filename has existed in that user's onedir, this method will overwrite it.
     #filelist = ""
-    cur2 = get_db().execute("SELECT files FROM user_account where username =?", (username,))
+    cur2 = server.get_db().execute("SELECT files FROM user_account where username =?", (username,))
     filelist = cur2.fetchone()[0]
-    get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
-    get_db().commit()
+    server.get_db().execute("UPDATE user_account SET files='" + server.addFile(filelist, filename) + "' WHERE username='" + username + "'")
+    server.get_db().commit()
     print("File sent to " + username + "!")
 
 

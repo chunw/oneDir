@@ -6,9 +6,10 @@ import sys
 import time
 import logging
 import client
-import main
+import server
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from watchdog.events import PatternMatchingEventHandler
 
 # configs
 home = expanduser("~")
@@ -37,16 +38,17 @@ class MyEventHandler(FileSystemEventHandler):
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
         client.clientUpload(filename)
-        main.update_db(filename, self.clientName, 'add')
+        server.update_db(filename, self.clientName, 'add')
 
     def on_deleted(self, event):
         # event.is_directory is correct
         self.catch_all(event, 'DEL')
         filename = self.parse_filename(event.src_path)
-        main.update_db(filename, self.clientName, 'del')
+        server.update_db(filename, self.clientName, 'del')
 
     def on_modified(self, event):
-        # Be careful: event.is_directory is True for both files and folders
+        # Note: event.is_directory is True for both files and folders
+        # print self.ignore_pattern in event.src_path
         if not self.ignore_pattern in event.src_path:
             if event.is_directory:
                 # For Mac OS X: FSEvents returns only the directory for file modified events,
@@ -55,7 +57,7 @@ class MyEventHandler(FileSystemEventHandler):
                 files_in_dir = [event.src_path+"/"+f for f in os.listdir(event.src_path)]
                 op_file_path = max(files_in_dir, key=os.path.getmtime)
                 print ("MOD", op_file_path)
-                filename = self.parse_filename(op_file_path)
+                filename = self.parse_filename(event.src_path)
                 client.clientUpload(filename)
 
 if __name__ == "__main__":
