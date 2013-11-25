@@ -9,7 +9,6 @@ import client
 import main
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from watchdog.events import PatternMatchingEventHandler
 
 # configs
 home = expanduser("~")
@@ -47,8 +46,7 @@ class MyEventHandler(FileSystemEventHandler):
         main.update_db(filename, self.clientName, 'del')
 
     def on_modified(self, event):
-        # Note: event.is_directory is True for both files and folders
-        # print self.ignore_pattern in event.src_path
+        # Be careful: event.is_directory is True for both files and folders
         if not self.ignore_pattern in event.src_path:
             if event.is_directory:
                 # For Mac OS X: FSEvents returns only the directory for file modified events,
@@ -57,7 +55,7 @@ class MyEventHandler(FileSystemEventHandler):
                 files_in_dir = [event.src_path+"/"+f for f in os.listdir(event.src_path)]
                 op_file_path = max(files_in_dir, key=os.path.getmtime)
                 print ("MOD", op_file_path)
-                filename = self.parse_filename(event.src_path)
+                filename = self.parse_filename(op_file_path)
                 client.clientUpload(filename)
 
 if __name__ == "__main__":
