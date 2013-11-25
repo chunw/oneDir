@@ -33,32 +33,18 @@ class MyEventHandler(FileSystemEventHandler):
         temp = file_path.split("onedir/")
         return temp[1]
 
-    def update_db(self, filename, op):
-        """ update filelist for client in database """
-        username = self.clientName
-        cur2 = main.get_db().execute("SELECT files FROM user_account where username =?", (username,))
-        filelist = cur2.fetchone()[0]
-        if op == 'add':
-            main.get_db().execute("UPDATE user_account SET files='" + main.addFile(filelist, filename) + "' WHERE username='" + username + "'")
-
-        if op == 'del':
-            main.get_db().execute("UPDATE user_account SET files='" + main.removeFile(filelist, filename) + "' WHERE username='" + username + "'")
-
-        main.get_db().commit()
-        return
-
     def on_created(self, event):
         # event.is_directory is correct
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
-        #client.clientUpload(filename)
-        self.update_db(filename, 'add')
+        client.clientUpload(filename)
+        main.update_db(filename, self.clientName, 'add')
 
     def on_deleted(self, event):
         # event.is_directory is correct
         self.catch_all(event, 'DEL')
         filename = self.parse_filename(event.src_path)
-        self.update_db(filename, 'del')
+        main.update_db(filename, self.clientName, 'del')
 
     def on_modified(self, event):
         # Note: event.is_directory is True for both files and folders

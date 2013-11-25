@@ -2,7 +2,7 @@ __author__ = 'Chris'
 
 from flask.ext.script import Manager
 from sqlite3 import dbapi2 as sqlite3
-from flask import Flask, g
+from flask import Flask, g, current_app
 from os.path import expanduser
 import os
 import watch
@@ -17,8 +17,8 @@ manager = Manager(fileApp)
 # Load default config and override config from an environment variable
 #TODO: This needs to be on the server
 fileApp.config.update(dict(
-    #DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
-    DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
+    DATABASE='/home/christopher/Dropbox/Public/CS3240/oneDir-group14/OneDir_accounts.db',
+    #DATABASE='/Users/chunwang1/oneDir-group14/OneDir_accounts.db',
     DEBUG=True,
     SECRET_KEY='development key',
     USERNAME='admin',
@@ -142,6 +142,21 @@ def getServerURL():
     """ client-side getter for server url """
     return serverURL
 
+def update_db(filename, username, op):
+        """ update filelist for client in database """
+        app = Flask(__name__)
+        with app.app_context():
+            db = get_db()
+            cur2 = db.execute("SELECT files FROM user_account where username =?", (username,))
+            filelist = cur2.fetchone()[0]
+            if op == 'add':
+                db.execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+            if op == 'del':
+                db.execute("UPDATE user_account SET files='" + removeFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+            db.commit()
+            return
 
 @manager.command
 def start():
