@@ -8,27 +8,28 @@ import logging
 import client
 import main
 from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 from watchdog.events import PatternMatchingEventHandler
 
 # configs
 home = expanduser("~")
 UPLOAD_FOLDER = home + '/onedir'  # assume client user has a dir called uploads under home dir
 
-class MyEventHandler(PatternMatchingEventHandler):
+class MyEventHandler(FileSystemEventHandler):
     """ customized file system event handler
     """
 
     def __init__(self, client_name, server_url):
-        super(PatternMatchingEventHandler, self).__init__()
+        super(FileSystemEventHandler, self).__init__()
         self.clientName = client_name
         self.serverUrl = server_url
-        #self.ignore_pattern = ".DS_Store"
+        self.ignore_pattern = ".DS_Store"
 
     def catch_all(self, event, op):
         if not self.ignore_pattern in event.src_path:
             print (op, event.src_path)
 
-    def parse_filename(self,file_path):
+    def parse_filename(self, file_path):
         temp = file_path.split("onedir/")
         return temp[1]
 
@@ -38,7 +39,7 @@ class MyEventHandler(PatternMatchingEventHandler):
         cur2 = main.get_db().execute("SELECT files FROM user_account where username =?", (username,))
         filelist = cur2.fetchone()[0]
         if op == 'add':
-            main.get_db().execute("UPDATE user_account SET files='" + main.removeFile(filelist, filename) + "' WHERE username='" + username + "'")
+            main.get_db().execute("UPDATE user_account SET files='" + main.addFile(filelist, filename) + "' WHERE username='" + username + "'")
 
         if op == 'del':
             main.get_db().execute("UPDATE user_account SET files='" + main.removeFile(filelist, filename) + "' WHERE username='" + username + "'")
@@ -50,7 +51,7 @@ class MyEventHandler(PatternMatchingEventHandler):
         # event.is_directory is correct
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
-        client.clientUpload(filename)
+        #client.clientUpload(filename)
         self.update_db(filename, 'add')
 
     def on_deleted(self, event):
@@ -76,14 +77,14 @@ class MyEventHandler(PatternMatchingEventHandler):
 if __name__ == "__main__":
 
     # Format console logs
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig( level=logging.INFO,
                         format='%(asctime)s - %(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S')
     path = sys.argv[1] if len(sys.argv) > 1 else '.'
 
     # Start watchdog
     observer = Observer()
-    event_handler = MyEventHandler()
+    event_handler = MyEventHandler('chun','http://172.25.179.70:8080/')
     observer.schedule(event_handler, path=UPLOAD_FOLDER, recursive=True)
     observer.start()
     try:
