@@ -144,6 +144,16 @@ def clientDownload(inputUserName):
                 os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
+def clientDownloadOff(inputUserName):
+    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    fileList = updateCurs.fetchone()[0]
+    fname = raw_input('Please enter the name of the file you would like to download.')
+    if findFile(fileList, fname) == True:
+        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+    else:
+        print "Sorry, you do not have permission to download this file."
+
+
 def getServerURL():
     """ client-side getter for server url """
     return serverURL
