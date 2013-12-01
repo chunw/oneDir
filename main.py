@@ -105,10 +105,15 @@ def start():
         observer = watch.Observer()
         event_handler = watch.MyEventHandler(finalUserName, client.getServerURL())
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
+
+        #This creates a lock on the watchdog thread "observer", the Lock object created is called lock
+        #when locked, the watchdog thread will be blocked until the lock is released
+        #lock is intialized as unlocked
+        lock = observer.Lock()
         observer.start()
 
     opt = 22
-    autosync = True
+
     while (opt != 0):
         if type == 'normal': #show file user options
             print '''
@@ -117,60 +122,48 @@ def start():
             1) Share a file
             2) Change password
             3) Turn auto synch on or off
+
+            These options are only necessary if auto synchronization is off.
+            Autosynchronization is the default, and the program begins with autosynchronization ON.
+
+            4) Upload a file manually
+            5) Download a file manually
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
 
-            while opt < 0 or opt > 4 or not isinstance(opt, int):
+            while opt < 0 or opt > 6 or not isinstance(opt, int):
                 opt = input("That is an invalid option, please re-try. ")
 
-            if opt == 1 and autosync is True:
+            if opt == 1:
                 shareFile()
-            if opt == 2 and autosync is True:
+            if opt == 2:
                 changePassword(finalUserName, db)
-            if opt == 3 and autosync is True:
-                autosync = False
-                observer.stop()
 
-                print '''
-                   FILE USER OPTIONS
-
-                1) Share a file
-                2) Change password
-                3) Turn auto sync on
-                4) Upload a file
-                5) Download a file
-
-                Entering 0 will still exit the program
-
-                '''
-                optOff = input("Please enter an option you want to do or '0' to quit.")
-
-                if optOff == 1:
-                    shareFile()
-
-                if optOff == 2:
-                    changePassword(finalUserName, db)
-
-                if optOff == 3:
-                    autosync = True
-                    # TODO
-                    # observer.start()
-
-
-                if optOff == 4:
-                    fname = input("Please enter the file name.")
-                    client.clientUpload(fname, finalUserName)
-
-                if optOff == 5:
-                    clientDownloadOff(finalUserName)
-
-                if optOff == 0:
-                    opt = 0
-
+                #This option handles toggling the autosynchronization.
+            if opt == 3:
+                #This checks if the lock is already locked. The lock is initialized as unlocked.
+                #If the observer thread is locked, then release the lock. This will allow auto synch to continue again.
+                #And will unblock the observer thread.
+                if lock.locked():
+                    #If it gets to here. Then the observer thread was locked.
+                    #This will release the lock on the observer thread, and the observer thread will start watching files again.
+                    lock.release()
+                    print 'Autosynch is now ON.'
+                #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
+                #Thus, the lock must be acquired which will lock the lock and stop the observer thread
+                    #until it is released (i.e the user turns it back on)
                 else:
-                    print "You have entered an invalid option."
+                    lock.acquire()
+                    print 'Autosynch is now OFF. '
 
-    #end of autosync code
+            #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
+            #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
+            if opt == 4:
+                fname = input("Please enter the file name.")
+                client.clientUpload(fname, finalUserName)
+            #The user is prompted for the file name within the clientDownloadOff() and it is used in that method for downloading the file.
+            if opt == 5:
+                clientDownloadOff(finalUserName)
 
 
         elif type == 'admin': #show admin user options
