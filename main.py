@@ -26,6 +26,7 @@ def getUsername():
 #TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: try returning a blank string on server call (instead of successful download)
 #TODO: update file list for user after watchdog upload occurs -> auto-downloading
+#TODO: pipe or hide CURL output
 
 #Database stuff
 fileApp.config.update(dict(

@@ -32,6 +32,16 @@ class MyEventHandler(FileSystemEventHandler):
         temp = file_path.split("onedir/")
         return temp[1]
 
+
+    def on_moved(self, event):
+        self.catch_all(event, 'MOV')
+        oldfilename = self.parse_filename(event.src_path)
+        newfilename = self.parse_filename(event.dest_path)
+        main.clientUpload(newfilename, self.clientName, self.serverUrl)
+        main.update_db(newfilename, self.clientName, 'add')
+        main.update_db(oldfilename, self.clientName, 'del')
+
+
     def on_created(self, event):
         # event.is_directory is correct
         self.catch_all(event, 'NEW')
