@@ -17,6 +17,10 @@ fileApp.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+def getServerURL():
+    """ client-side getter for server url """
+    return serverURL
+
 # save files uploaded to this route to UPLOAD_FOLDER
 @fileApp.route('/', methods=['GET', 'POST'])
 def upload_file():

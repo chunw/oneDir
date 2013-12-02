@@ -5,9 +5,7 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
-import client
 from sqlite3 import dbapi2 as sqlite3
-import socket
 
 #Where the client knows to look for the folder
 
@@ -24,11 +22,14 @@ finalUserName = ''
 def getUsername():
     return finalUserName
 
+def getServerURL():
+    """ client-side getter for server url """
+    return serverURL
+
 
 #TODO: can create a file directly in onedir -> check allowed extensions before uploading
 #TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: try returning a blank string on server call (instead of successful download)
-#TODO: change calls to fileUpload to client.fileUpload (import client)
 #TODO: update file list for user after watchdog upload occurs -> auto-downloading
 
 #Database stuff
@@ -40,6 +41,11 @@ fileApp.config.update(dict(
     PASSWORD='default'
 ))
 fileApp.config.from_object(__name__)
+
+#pass in username as well so that the DB can verify the user can make this request
+def clientDownload(filename):
+    #check with database that user can download this file
+    os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
 
 def getURL():
     return serverURL
@@ -125,6 +131,9 @@ def findFile(dbstring, fname):
         else:
             return False
 
+def parseList(dbstring):
+    return dbstring.split(';')
+
 
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file added to put back in db
@@ -134,12 +143,43 @@ def clientDownloadOff(inputUserName):
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
-        os.system('curl ' + client.getServerURL() + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl ' + getServerURL() + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
     else:
         print "Sorry, you do not have permission to download this file."
 
+def clientUpload(filename, inputUserName):
+    if not '~' in filename:
+        app = Flask(__name__)
+        with app.app_context():
+            db = get_db()
+            os.chdir(expanduser("~/onedir"))
+            f = ' filedata=@'
+            g = f + filename
+            os.system('curl -F' + g + ' ' + serverURL)
+
+            #Update the file list for that user
+
+            updateCurs = db.execute("SELECT files FROM user_account where username =?", (inputUserName,))
+            fileList = updateCurs.fetchone()[0]
+            newFileList = addFile(fileList, filename)
+            db.execute("UPDATE user_account SET files =? WHERE username =?", (newFileList, inputUserName,))
+            db.commit()
+
+
+#pass in username as well so that the DB can verify the user can make this request
+def clientDownload(inputUserName):
+    #Update the files listed for user
+    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    fileList = updateCurs.fetchone()[0]
+    if fileList is not None:
+        fileList = parseList(fileList)
+        for filename in fileList:
+            if filename is not '':
+                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+
 @manager.command
 def start():
+    #TODO: Check AutoSynch stuff
     "Kick off the user command line interface."
     db = get_db()
 
@@ -178,11 +218,11 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
-        client.clientDownload(finalUserName)
+        clientDownload(finalUserName)
 
         #Start watchdog
         observer = watch.Observer()
-        event_handler = watch.MyEventHandler(finalUserName, client.getServerURL())
+        event_handler = watch.MyEventHandler(finalUserName, getServerURL())
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
 
         #This creates a lock on the watchdog thread "observer", the Lock object created is called lock
@@ -238,8 +278,8 @@ def start():
             #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
             if opt == 4:
-                fname = input("Please enter the file name.")
-                client.clientUpload(fname, finalUserName)
+                fname = raw_input("Please enter the file name.")
+                clientUpload(fname, finalUserName)
             #The user is prompted for the file name within the clientDownloadOff() and it is used in that method for downloading the file.
             if opt == 5:
                 clientDownloadOff(finalUserName)
