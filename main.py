@@ -109,7 +109,7 @@ def start():
         #This creates a lock on the watchdog thread "observer", the Lock object created is called lock
         #when locked, the watchdog thread will be blocked until the lock is released
         #lock is intialized as unlocked
-        lock = observer.Lock()
+        lock = observer._lock
         observer.start()
 
     opt = 22

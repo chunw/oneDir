@@ -8,7 +8,7 @@ import server
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 
-serverURL = 'http://0.0.0.0:8080/'
+serverURL = 'http://172.25.98.212:8080/'
 
 def getServerURL():
     """ client-side getter for server url """
