@@ -5,6 +5,7 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
+import sys
 from sqlite3 import dbapi2 as sqlite3
 
 #Where the client knows to look for the folder

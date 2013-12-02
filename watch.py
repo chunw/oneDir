@@ -36,7 +36,7 @@ class MyEventHandler(FileSystemEventHandler):
         # event.is_directory is correct
         self.catch_all(event, 'NEW')
         filename = self.parse_filename(event.src_path)
-        main.clientUpload(filename, self.clientName)
+        main.clientUpload(filename, self.clientName, self.serverUrl)
         main.update_db(filename, self.clientName, 'add')
 
     def on_deleted(self, event):
@@ -57,7 +57,7 @@ class MyEventHandler(FileSystemEventHandler):
                 op_file_path = max(files_in_dir, key=os.path.getmtime)
                 print ("MOD", op_file_path)
                 filename = self.parse_filename(op_file_path)
-                main.clientUpload(filename, self.clientName)
+                main.clientUpload(filename, self.clientName, self.serverUrl)
 
 if __name__ == "__main__":
 
