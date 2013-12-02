@@ -1,14 +1,17 @@
 __author__ = 'Chris'
 
 from flask.ext.script import Manager
-from flask import Flask
+from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
-import server
 import client
+from sqlite3 import dbapi2 as sqlite3
+import socket
 
-#Where he client knows to look for the folder
+#Where the client knows to look for the folder
+
+serverURL = 'http://0.0.0.0:8080/'
 
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
@@ -27,7 +30,89 @@ def getUsername():
 #TODO: try returning a blank string on server call (instead of successful download)
 #TODO: change calls to fileUpload to client.fileUpload (import client)
 #TODO: update file list for user after watchdog upload occurs -> auto-downloading
-#TODO: maybe move the .db file over to server.py?
+
+#Database stuff
+fileApp.config.update(dict(
+    DATABASE=expanduser("~/Dropbox/server/OneDir_accounts.db"),
+    DEBUG=True,
+    SECRET_KEY='development key',
+    USERNAME='admin',
+    PASSWORD='default'
+))
+fileApp.config.from_object(__name__)
+
+def getURL():
+    return serverURL
+
+def connect_db():
+    """Connects to the specific database."""
+    rv = sqlite3.connect(fileApp.config['DATABASE'])
+    rv.text_factory = str
+    rv.row_factory = sqlite3.Row
+    return rv
+
+
+def get_db():
+    """Opens a new database connection if there is none yet for the
+    current application context.
+    """
+    if not hasattr(g, 'sqlite_db'):
+        g.sqlite_db = connect_db()
+    return g.sqlite_db
+
+
+@fileApp.teardown_appcontext
+def close_db(error):
+    """Closes the database again at the end of the request."""
+    if hasattr(g, 'sqlite_db'):
+        g.sqlite_db.close()
+
+def update_db(filename, username, op):
+        """ update filelist for client in database """
+        app = Flask(__name__)
+        with app.app_context():
+            db = get_db()
+            cur2 = db.execute("SELECT files FROM user_account where username =?", (username,))
+            filelist = cur2.fetchone()[0]
+            if op == 'add':
+                db.execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+            if op == 'del':
+                db.execute("UPDATE user_account SET files='" + removeFile(filelist, filename) + "' WHERE username='" + username + "'")
+
+            db.commit()
+            return
+
+def addFile(dbstring, fname):
+    if dbstring is None:
+        dbstring = ""
+    fList = dbstring.split(';')
+    if fname in fList: # if the filename already exists, do nothing
+        return dbstring
+    else:
+        fList.append(fname)
+        newList = []
+        for i in fList:
+            x = i + ';'
+            newList.append(x)
+        newString = ''.join(newList)
+        return newString
+
+#@param: database string of files, and file to remove
+#@return: returns the new string of files with the file removed to put back in db
+#use this method when you want to remove a file from a user's associated files in the db
+def removeFile(dbstring, fname):
+    fList = dbstring.split(';')
+    if not fname in fList:  # if filename is not in filelist, do nothing
+        return dbstring
+    else:
+        fList.remove(fname)
+        newList = []
+        for i in fList:
+            x =  i + ';'
+            newList.append(x)
+        newString = ''.join(newList)
+        return newString
 
 #@param: database string of files, and file to find
 #@return: returns a boolean value based on whether or not the user has this file
@@ -41,17 +126,11 @@ def findFile(dbstring, fname):
             return False
 
 
-#@param: database string of files
-#@return: return the new string of files as a parseable list
-def parseList(dbstring):
-    return dbstring.split(';')
-
-
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file added to put back in db
 #use this method when you want to add a file to a user's associated files in the db
 def clientDownloadOff(inputUserName):
-    updateCurs = server.get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
@@ -62,7 +141,7 @@ def clientDownloadOff(inputUserName):
 @manager.command
 def start():
     "Kick off the user command line interface."
-    db = server.get_db()
+    db = get_db()
 
     inputNew = raw_input("Are you a new user? y/n ")
 
@@ -215,7 +294,7 @@ def shareFile():
         print "Oops, file does not exist."
         return
     username = raw_input("Who to share with? >> ").strip()
-    cur = server.get_db().execute("SELECT username FROM user_account where username =?", (username,))
+    cur = get_db().execute("SELECT username FROM user_account where username =?", (username,))
     entries = cur.fetchall()
     if len(entries) == 0:
         print "Oops, user does not exist."
@@ -224,10 +303,10 @@ def shareFile():
     # NOTE: the other user need to restart the onedir program to see this file.
     # If the filename has existed in that user's onedir, this method will overwrite it.
     #filelist = ""
-    cur2 = server.get_db().execute("SELECT files FROM user_account where username =?", (username,))
+    cur2 = get_db().execute("SELECT files FROM user_account where username =?", (username,))
     filelist = cur2.fetchone()[0]
-    server.get_db().execute("UPDATE user_account SET files='" + server.addFile(filelist, filename) + "' WHERE username='" + username + "'")
-    server.get_db().commit()
+    get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+    get_db().commit()
     print("File sent to " + username + "!")
 
 
