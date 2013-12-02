@@ -22,11 +22,9 @@ def getUsername():
     return finalUserName
 
 
-#TODO: can create a file directly in onedir -> check allowed extensions before uploading
 #TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: try returning a blank string on server call (instead of successful download)
-#TODO: update file list for user after watchdog upload occurs -> auto-downloading
-#TODO: pipe or hide CURL output
+#TODO: pipe or hide CURL output (-s for silent)
 
 #Database stuff
 fileApp.config.update(dict(
@@ -41,7 +39,7 @@ fileApp.config.from_object(__name__)
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(filename, serverURL):
     #check with database that user can download this file
-    os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
+    os.system('curl -s ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
 
 
 def connect_db():
@@ -137,7 +135,7 @@ def clientDownloadOff(inputUserName, serverURL):
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
-        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
     else:
         print "Sorry, you do not have permission to download this file."
 
@@ -149,7 +147,7 @@ def clientUpload(filename, inputUserName, serverURL):
             os.chdir(expanduser("~/onedir"))
             f = ' filedata=@'
             g = f + filename
-            os.system('curl -F' + g + ' ' + serverURL)
+            os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
 
@@ -169,7 +167,7 @@ def clientDownload(inputUserName, serverURL):
         fileList = parseList(fileList)
         for filename in fileList:
             if filename is not '':
-                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 @manager.command
 def start(serverURL):
@@ -245,7 +243,7 @@ def start(serverURL):
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
 
-            while opt < 0 or opt > 6 or not isinstance(opt, int):
+            while not isinstance(opt, int) or opt < 0 or opt > 6:
                 opt = input("That is an invalid option, please re-try. ")
 
             if opt == 1:
@@ -293,7 +291,7 @@ def start(serverURL):
             7) Change your password
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
-            while opt < 0 or opt > 7 or not isinstance(opt, int):
+            while not isinstance(opt, int) or opt < 0 or opt > 7:
                 opt = input("That is an invalid option, please re-try. ")
             if opt == 1:
                 deleteUser(db)
