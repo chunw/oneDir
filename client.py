@@ -42,11 +42,6 @@ def clientDownload(inputUserName):
             if filename is not '': #TODO: make it so the actual parser works better (no semicolon at beginning)
                 os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
-#pass in username as well so that the DB can verify the user can make this request
-def clientDownload(filename):
-    #check with database that user can download this file
-    os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
-
 if __name__ == '__main__':
     #clientUpload('inlab9.txt')
     clientDownload('hi4.txt')
