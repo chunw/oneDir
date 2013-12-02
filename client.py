@@ -7,7 +7,7 @@ from os.path import expanduser
 
 fileApp = Flask(__name__, static_folder = 'static', static_url_path = '/')
 
-serverURL = 'http://172.25.109.223:8080/'
+serverURL = 'http://0.0.0.0:8080/'
 
 def getServerURL():
     """ client-side getter for server url """

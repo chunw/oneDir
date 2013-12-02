@@ -282,9 +282,13 @@ def start():
 
 
 def createNewAccount(newUserName, newPassword, db):
-    db.cursor().execute('''INSERT INTO user_account (username, password, user_type)
+    try:
+        db.cursor().execute('''INSERT INTO user_account (username, password, user_type)
         VALUES (?, ?, 'normal')''', (newUserName, newPassword))
-    db.commit()
+        db.commit()
+    except sqlite3.IntegrityError:
+        print "An account with that name already exists, please re-run."
+        exit(0)
 
 
 def shareFile():
