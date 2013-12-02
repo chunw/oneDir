@@ -9,8 +9,6 @@ from sqlite3 import dbapi2 as sqlite3
 
 #Where the client knows to look for the folder
 
-serverURL = 'http://0.0.0.0:8080/'
-
 fileApp = Flask(__name__, static_folder='static', static_url_path='/')
 
 manager = Manager(fileApp)
@@ -21,10 +19,6 @@ finalUserName = ''
 
 def getUsername():
     return finalUserName
-
-def getServerURL():
-    """ client-side getter for server url """
-    return serverURL
 
 
 #TODO: can create a file directly in onedir -> check allowed extensions before uploading
@@ -43,12 +37,10 @@ fileApp.config.update(dict(
 fileApp.config.from_object(__name__)
 
 #pass in username as well so that the DB can verify the user can make this request
-def clientDownload(filename):
+def clientDownload(filename, serverURL):
     #check with database that user can download this file
     os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
 
-def getURL():
-    return serverURL
 
 def connect_db():
     """Connects to the specific database."""
@@ -138,16 +130,16 @@ def parseList(dbstring):
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file added to put back in db
 #use this method when you want to add a file to a user's associated files in the db
-def clientDownloadOff(inputUserName):
+def clientDownloadOff(inputUserName, serverURL):
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
-        os.system('curl ' + getServerURL() + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
     else:
         print "Sorry, you do not have permission to download this file."
 
-def clientUpload(filename, inputUserName):
+def clientUpload(filename, inputUserName, serverURL):
     if not '~' in filename:
         app = Flask(__name__)
         with app.app_context():
@@ -167,7 +159,7 @@ def clientUpload(filename, inputUserName):
 
 
 #pass in username as well so that the DB can verify the user can make this request
-def clientDownload(inputUserName):
+def clientDownload(inputUserName, serverURL):
     #Update the files listed for user
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
@@ -178,8 +170,9 @@ def clientDownload(inputUserName):
                 os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 @manager.command
-def start():
+def start(serverURL):
     #TODO: Check AutoSynch stuff
+    print serverURL
     "Kick off the user command line interface."
     db = get_db()
 
@@ -218,11 +211,11 @@ def start():
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
-        clientDownload(finalUserName)
+        clientDownload(finalUserName, serverURL)
 
         #Start watchdog
         observer = watch.Observer()
-        event_handler = watch.MyEventHandler(finalUserName, getServerURL())
+        event_handler = watch.MyEventHandler(finalUserName, serverURL)
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
 
         #This creates a lock on the watchdog thread "observer", the Lock object created is called lock
@@ -279,10 +272,10 @@ def start():
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
             if opt == 4:
                 fname = raw_input("Please enter the file name.")
-                clientUpload(fname, finalUserName)
+                clientUpload(fname, finalUserName, serverURL)
             #The user is prompted for the file name within the clientDownloadOff() and it is used in that method for downloading the file.
             if opt == 5:
-                clientDownloadOff(finalUserName)
+                clientDownloadOff(finalUserName, serverURL)
 
 
         elif type == 'admin': #show admin user options
