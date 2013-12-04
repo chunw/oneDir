@@ -143,7 +143,7 @@ def clientDownloadOff(inputUserName, serverURL):
 
 def sys_log(event):
     """ create system log """
-    f = open("sys_log.txt", "a")
+    f = open(expanduser("~/Dropbox/server/sys_log.txt"), "a")
     f.write(event + " at: " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "\n")
     f.close()
 
@@ -421,7 +421,7 @@ def viewFileSystem():
 
 
 def viewReportLog():
-    f = open('sys_log.txt', 'r')
+    f = open(expanduser("~/Dropbox/server/sys_log.txt"), 'r')
     log = f.read()
     print log
     f.close()
