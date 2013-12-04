@@ -23,7 +23,6 @@ def getUsername():
     return finalUserName
 
 
-#TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: pipe or hide CURL output (-s for silent)
 #TODO: changeSystem, viewFileSystem, viewReportLog
 #TODO: can create new folder and it curls the hierarchy
@@ -156,9 +155,9 @@ def clientUpload(filename, inputUserName, serverURL):
         with app.app_context():
             db = get_db()
             os.chdir(expanduser("~/onedir"))
-            f = ' filedata=@'
+            f = 'filedata=@'
             g = f + filename
-            os.system('curl -F ' + g + ' ' + serverURL)
+            os.system('curl -F ' + "'" + g + "' " + serverURL)
             #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
@@ -180,6 +179,10 @@ def clientDownload(inputUserName, serverURL):
         fileList = parseList(fileList)
         for filename in fileList:
             if filename is not '':
+                if ' ' in filename: #handle curl of files with spaces
+                    filenameparts = filename.split(' ')
+                    filename = filenameparts[0] + '_' + filenameparts[1]
+                print filename
                 os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
                 #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
