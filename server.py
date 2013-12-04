@@ -32,6 +32,11 @@ def upload_file():
 
 
     return 'Upload Successful'
+
+def deleteFile(filename):
+    os.chdir(expanduser('~/onedir'))
+    os.remove(filename)
+
   
 
 # view files uploaded to UPLOAD_FOLDER

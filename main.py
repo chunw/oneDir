@@ -5,9 +5,9 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
-import sys
 from time import gmtime, strftime
 from sqlite3 import dbapi2 as sqlite3
+import server
 
 #Where the client knows to look for the folder
 
@@ -379,7 +379,7 @@ def deleteUser(db, serverURL):
             fileList = parseList(fileList)
             for filename in fileList:
                 if filename is not '':
-                    os.system('curl -X DELETE ' + serverURL + 'onedir/' + filename)
+                    server.deleteFile(filename)
     else:
         return
 
@@ -428,7 +428,6 @@ def viewFiles(dbstring):
     for i in fList:
         if i is not '':
             print i
-
 
 if __name__ == '__main__':
     manager.run()
