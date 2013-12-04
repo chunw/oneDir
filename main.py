@@ -401,12 +401,16 @@ def viewUserInfo(db):
     cur = db.execute("SELECT username FROM user_account where username =?", (userInfoName,))
     cur1 = db.execute("SELECT password FROM user_account where username =?", (userInfoName,))
     cur2 = db.execute("SELECT files FROM user_account where username =?", (userInfoName,))
-    type = cur.fetchone()[0]
+    type = cur.fetchall()
+    if not type:
+        print "That username doesn't exist."
+        return
     type1 = cur1.fetchone()[0]
     type2 = cur2.fetchone()[0]
-    print 'username: ' + type
+    print 'username: ' + userInfoName
     print 'password: ' + type1
     viewFiles(type2)
+
 
 
 def viewFileSystem():
