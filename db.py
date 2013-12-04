@@ -1,8 +1,9 @@
 __author__ = 'Justin'
 
 import sqlite3
+from os.path import expanduser
 
-createDb = sqlite3.connect('OneDir_accounts.db')
+createDb = sqlite3.connect(expanduser("~/Dropbox/server/OneDir_accounts.db"))
 createDb.text_factory = str
 queryCurs = createDb.cursor()
 
@@ -23,7 +24,7 @@ def main():
     #createTable()
     #queryCurs.execute("ALTER TABLE user_account ADD COLUMN user_type TEXT")
     #queryCurs.execute("ALTER TABLE user_account ADD COLUMN files TEXT")
-    #queryCurs.execute("UPDATE user_account SET user_type = 'admin' WHERE username = 'justinc'")
+    #queryCurs.execute("UPDATE user_account SET files = 'None' WHERE username = 'ken'")
     #queryCurs.execute('''DELETE  FROM user_account where username = 'david' ''')
     #addUserAccount('justinc', 'qwerty')
     #addUserAccount('user1', 'password')
