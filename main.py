@@ -6,6 +6,7 @@ from os.path import expanduser
 import os
 import watch
 import sys
+from time import gmtime, strftime
 from sqlite3 import dbapi2 as sqlite3
 
 #Where the client knows to look for the folder
@@ -38,13 +39,6 @@ fileApp.config.update(dict(
     PASSWORD='default'
 ))
 fileApp.config.from_object(__name__)
-
-#pass in username as well so that the DB can verify the user can make this request
-def clientDownload(filename, serverURL):
-    #check with database that user can download this file
-    os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
-    #os.system('curl -s ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
-
 
 def connect_db():
     """Connects to the specific database."""
@@ -139,15 +133,25 @@ def parseList(dbstring):
 def clientDownloadOff(inputUserName, serverURL):
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
-    fname = raw_input('Please enter the name of the file you would like to download.')
+    fname = raw_input('Please enter the name of the file you would like to download: ')
     if findFile(fileList, fname) == True:
         os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
         #os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        sys_log(inputUserName + " manually downloaded file: " + fname)
     else:
         print "Sorry, you do not have permission to download this file."
 
+
+def sys_log(event):
+    """ create system log """
+    f = open("sys_log.txt", "a")
+    f.write(event + " at: " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "\n")
+    f.close()
+
+
 def clientUpload(filename, inputUserName, serverURL):
     if not '~' in filename:
+        sys_log(inputUserName + " uploaded file: " + filename)
         app = Flask(__name__)
         with app.app_context():
             db = get_db()
@@ -169,6 +173,7 @@ def clientUpload(filename, inputUserName, serverURL):
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(inputUserName, serverURL):
     #Update the files listed for user
+    sys_log(inputUserName + " pulled file changes to local machine ")
     updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
     fileList = updateCurs.fetchone()[0]
     if fileList is not None:
@@ -187,8 +192,8 @@ def start(serverURL):
     inputNew = raw_input("Are you a new user? y/n ")
 
     if inputNew == 'Y' or inputNew == 'y' or inputNew == 'yes' or inputNew == 'Yes':
-        newUserName = raw_input("Please enter the user name you would like. ")
-        newPassword = raw_input("Please enter the password you would like. ")
+        newUserName = raw_input("Please enter the user name you would like: ")
+        newPassword = raw_input("Please enter the password you would like: ")
         createNewAccount(newUserName, newPassword, db)
         finalUserName = newUserName
 
@@ -255,7 +260,7 @@ def start(serverURL):
                 opt = input("That is an invalid option, please re-try. ")
 
             if opt == 1:
-                shareFile()
+                shareFile(finalUserName)
             if opt == 2:
                 changePassword(finalUserName, db)
 
@@ -279,8 +284,9 @@ def start(serverURL):
             #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
             if opt == 4:
-                fname = raw_input("Please enter the file name.")
+                fname = raw_input("Please enter the file name: ")
                 clientUpload(fname, finalUserName, serverURL)
+
             #The user is prompted for the file name within the clientDownloadOff() and it is used in that method for downloading the file.
             if opt == 5:
                 clientDownloadOff(finalUserName, serverURL)
@@ -332,7 +338,7 @@ def createNewAccount(newUserName, newPassword, db):
         exit(0)
 
 
-def shareFile():
+def shareFile(finalUserName):
     filename = raw_input("Which file to share? >> ").strip()
     if not os.path.isfile(expanduser("~") + "/onedir/" + filename):
         print "Oops, file does not exist."
@@ -351,6 +357,7 @@ def shareFile():
     filelist = cur2.fetchone()[0]
     get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
     get_db().commit()
+    sys_log(finalUserName + " shared file: " + filename + " with user: " + username)
     print("File sent to " + username + "!")
 
 
@@ -407,7 +414,10 @@ def viewFileSystem():
 
 
 def viewReportLog():
-    print "This is how you would view a report log of system access"
+    f = open('sys_log.txt', 'r')
+    log = f.read()
+    print log
+    f.close()
 
 
 def viewFiles(dbstring):
