@@ -23,8 +23,11 @@ def getUsername():
 
 
 #TODO: can handle uploads when file has a space in its name (server OR file string)
-#TODO: try returning a blank string on server call (instead of successful download)
 #TODO: pipe or hide CURL output (-s for silent)
+#TODO: changeSystem, viewFileSystem, viewReportLog
+#TODO: can create new folder and it curls the hierarchy
+#TODO: second local machine makes changes when first local machine does
+#TODO: admin user can optionally delete files off of server
 
 #Database stuff
 fileApp.config.update(dict(
@@ -39,7 +42,8 @@ fileApp.config.from_object(__name__)
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(filename, serverURL):
     #check with database that user can download this file
-    os.system('curl -s ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
+    os.system('curl ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
+    #os.system('curl -s ' + serverURL + 'onedir/' + filename + ' > ~/onedir/' + filename )
 
 
 def connect_db():
@@ -81,6 +85,7 @@ def update_db(filename, username, op):
             db.commit()
             return
 
+
 def addFile(dbstring, fname):
     if dbstring is None:
         dbstring = ""
@@ -95,6 +100,7 @@ def addFile(dbstring, fname):
             newList.append(x)
         newString = ''.join(newList)
         return newString
+
 
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file removed to put back in db
@@ -135,7 +141,8 @@ def clientDownloadOff(inputUserName, serverURL):
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download.')
     if findFile(fileList, fname) == True:
-        os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        #os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
     else:
         print "Sorry, you do not have permission to download this file."
 
@@ -147,7 +154,8 @@ def clientUpload(filename, inputUserName, serverURL):
             os.chdir(expanduser("~/onedir"))
             f = ' filedata=@'
             g = f + filename
-            os.system('curl -F -s' + g + ' ' + serverURL)
+            os.system('curl -F ' + g + ' ' + serverURL)
+            #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
 
@@ -167,12 +175,12 @@ def clientDownload(inputUserName, serverURL):
         fileList = parseList(fileList)
         for filename in fileList:
             if filename is not '':
-                os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+
 
 @manager.command
 def start(serverURL):
-    #TODO: Check AutoSynch stuff
-    print serverURL
     "Kick off the user command line interface."
     db = get_db()
 
@@ -294,7 +302,7 @@ def start(serverURL):
             while not isinstance(opt, int) or opt < 0 or opt > 7:
                 opt = input("That is an invalid option, please re-try. ")
             if opt == 1:
-                deleteUser(db)
+                deleteUser(db, serverURL)
             if opt == 2:
                 changePasswordAsAdmin(db)
             if opt == 3:
@@ -325,7 +333,6 @@ def createNewAccount(newUserName, newPassword, db):
 
 
 def shareFile():
-    print "This is how you would share files"
     filename = raw_input("Which file to share? >> ").strip()
     if not os.path.isfile(expanduser("~") + "/onedir/" + filename):
         print "Oops, file does not exist."
@@ -352,14 +359,23 @@ def changePassword(finalUserName, db):
     db.cursor().execute('''UPDATE user_account SET password = ? WHERE username = (?) ''', (newPassword, finalUserName, ))
     db.commit()
 
-def changeSynch():
-    print "This is how you would change the autosynch settings"
 
-
-def deleteUser(db):
+def deleteUser(db, serverURL):
     deletedUserName = raw_input("Please enter the username you want to delete: ")
+    files = get_db().execute("SELECT files FROM user_account where username =?", (deletedUserName,))
     db.cursor().execute('''DELETE FROM user_account WHERE username = (?) ''', (deletedUserName,))
     db.commit()
+    inputNew = raw_input("Do you want to delete their files, too? y/n ")
+    if inputNew == 'Y' or inputNew == 'y' or inputNew == 'yes' or inputNew == 'Yes':
+        fileList = files.fetchone()[0]
+        if fileList is not None:
+            fileList = parseList(fileList)
+            for filename in fileList:
+                if filename is not '':
+                    os.system('curl -X DELETE ' + serverURL + 'onedir/' + filename)
+    else:
+        return
+
 
 
 def changePasswordAsAdmin(db):
@@ -385,6 +401,7 @@ def viewUserInfo(db):
     print 'password: ' + type1
     viewFiles(type2)
 
+
 def viewFileSystem():
     print "This is how you would view the file system"
 
@@ -395,9 +412,12 @@ def viewReportLog():
 
 def viewFiles(dbstring):
     print 'files: '
+    if dbstring is '' or dbstring is None:
+        return
     fList = dbstring.split(';')
     for i in fList:
-        print i
+        if i is not '':
+            print i
 
 
 if __name__ == '__main__':
