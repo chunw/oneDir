@@ -1,9 +1,11 @@
+from os.path import expanduser
+
 __author__ = 'Justin'
 
 import sqlite3
 from os.path import expanduser
 
-createDb = sqlite3.connect(expanduser("~/Dropbox/server/OneDir_accounts.db"))
+createDb = sqlite3.connect(expanduser('~/Dropbox/server/OneDir_accounts.db'))
 createDb.text_factory = str
 queryCurs = createDb.cursor()
 

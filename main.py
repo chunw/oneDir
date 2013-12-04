@@ -23,7 +23,6 @@ def getUsername():
     return finalUserName
 
 
-#TODO: can handle uploads when file has a space in its name (server OR file string)
 #TODO: pipe or hide CURL output (-s for silent)
 #TODO: changeSystem, viewFileSystem, viewReportLog
 #TODO: can create new folder and it curls the hierarchy
@@ -156,9 +155,9 @@ def clientUpload(filename, inputUserName, serverURL):
         with app.app_context():
             db = get_db()
             os.chdir(expanduser("~/onedir"))
-            f = ' filedata=@'
+            f = 'filedata=@'
             g = f + filename
-            os.system('curl -F ' + g + ' ' + serverURL)
+            os.system('curl -F ' + "'" + g + "' " + serverURL)
             #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
@@ -180,6 +179,10 @@ def clientDownload(inputUserName, serverURL):
         fileList = parseList(fileList)
         for filename in fileList:
             if filename is not '':
+                if ' ' in filename: #handle curl of files with spaces
+                    filenameparts = filename.split(' ')
+                    filename = filenameparts[0] + '_' + filenameparts[1]
+                print filename
                 os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
                 #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
@@ -401,12 +404,16 @@ def viewUserInfo(db):
     cur = db.execute("SELECT username FROM user_account where username =?", (userInfoName,))
     cur1 = db.execute("SELECT password FROM user_account where username =?", (userInfoName,))
     cur2 = db.execute("SELECT files FROM user_account where username =?", (userInfoName,))
-    type = cur.fetchone()[0]
+    type = cur.fetchall()
+    if not type:
+        print "That username doesn't exist."
+        return
     type1 = cur1.fetchone()[0]
     type2 = cur2.fetchone()[0]
-    print 'username: ' + type
+    print 'username: ' + userInfoName
     print 'password: ' + type1
     viewFiles(type2)
+
 
 
 def viewFileSystem():
