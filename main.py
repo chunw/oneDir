@@ -19,6 +19,7 @@ finalUserName = ''
 
 # Load default config and override config from an environment variable
 
+
 def getUsername():
     return finalUserName
 
@@ -38,6 +39,7 @@ fileApp.config.update(dict(
     PASSWORD='default'
 ))
 fileApp.config.from_object(__name__)
+
 
 def connect_db():
     """Connects to the specific database."""
@@ -446,7 +448,6 @@ def viewUserInfo(db):
 
 
 def viewFileSystem(db):
-    print "This is how you would view the file system"
     cur = db.execute("SELECT files FROM user_account")
     type = cur.fetchall()
     print type
