@@ -31,7 +31,7 @@ def upload_file():
             file.save(os.path.join(fileApp.config['UPLOAD_FOLDER'], filename))
 
 
-    return 'Upload Successful'
+    return 'Upload Successful  \n'
 
 def deleteFile(filename):
     os.chdir(expanduser('~/onedir'))

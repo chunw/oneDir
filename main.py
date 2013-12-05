@@ -88,7 +88,7 @@ def addFile(dbstring, file):
      for str in fList:
         str = str.split(",")
         fnames.append(str[0])
-     if get_filename(file) in fnames: # if the filename already exists, do nothing
+     if get_filename(file) in fnames or '.DS_Store' in get_filename(file): # if the filename already exists, do nothing
         return dbstring
      else:
         fList.append(file)
@@ -354,7 +354,7 @@ def start(serverURL):
             if opt == 4:
                 viewUserInfo(db)
             if opt == 5:
-                viewFileSystem()
+                viewFileSystem(db)
             if opt == 6:
                 viewReportLog()
             if opt == 7:
@@ -450,9 +450,11 @@ def viewUserInfo(db):
     viewFiles(type2)
 
 
-def viewFileSystem():
+def viewFileSystem(db):
     print "This is how you would view the file system"
-
+    cur = db.execute("SELECT files FROM user_account")
+    type = cur.fetchall()
+    print type
 
 
 def viewReportLog():
