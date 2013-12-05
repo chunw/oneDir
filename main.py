@@ -479,10 +479,13 @@ def printFriendly(dbList):
 def viewFileSystem(db):
     cur = db.execute("SELECT files FROM user_account")
     type = cur.fetchall()
-    print "================"
-    print "Files on server:"
-    print "================"
+    print "============================"
+    print "Files on server:            "
+    print "----------------------------"
+    print "filename, file size in bytes"
+    print "============================"
     printFriendly(type)
+
 
 def viewReportLog():
     f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), 'r')
@@ -492,7 +495,11 @@ def viewReportLog():
 
 
 def viewFiles(dbstring):
-    print 'files: '
+    print "============================"
+    print "User files:                 "
+    print "----------------------------"
+    print "filename, file size in bytes"
+    print "============================"
     if dbstring is '' or dbstring is None:
         return
     fList = dbstring.split(';')
