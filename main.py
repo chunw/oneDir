@@ -142,7 +142,7 @@ def clientDownloadOff(inputUserName, serverURL):
 
 def sys_log(event):
     """ create system log """
-    f = open(expanduser("~/Dropbox/server/sys_log.txt"), "a")
+    f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), "a")
     f.write(event + " at: " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "\n")
     f.close()
 
@@ -312,14 +312,14 @@ def start(serverURL):
                     #This will release the lock on the observer thread, and the observer thread will start watching files again.
                     lock.release()
                     print 'Autosynch is now ON.'
-                    sys_log("Autosynch was turned on")
+                    sys_log(finalUserName + " turned on autosynch ")
                 #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
                 #Thus, the lock must be acquired which will lock the lock and stop the observer thread
                     #until it is released (i.e the user turns it back on)
                 else:
                     lock.acquire()
                     print 'Autosynch is now OFF. '
-                    sys_log("Autosynch was turned off")
+                    sys_log(finalUserName + " turned off autosynch ")
 
             #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
@@ -453,7 +453,7 @@ def viewFileSystem(db):
 
 
 def viewReportLog():
-    f = open(expanduser("~/Dropbox/server/sys_log.txt"), 'r')
+    f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), 'r')
     log = f.read()
     print log
     f.close()
