@@ -24,7 +24,7 @@ def getUsername():
 
 
 #TODO: pipe or hide CURL output (-s for silent)
-#TODO: changeSystem, viewFileSystem, viewReportLog
+#TODO: viewFileSystem
 #TODO: can create new folder and it curls the hierarchy
 #TODO: second local machine makes changes when first local machine does
 #TODO: admin user can optionally delete files off of server
@@ -312,12 +312,14 @@ def start(serverURL):
                     #This will release the lock on the observer thread, and the observer thread will start watching files again.
                     lock.release()
                     print 'Autosynch is now ON.'
+                    sys_log("Autosynch was turned on")
                 #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
                 #Thus, the lock must be acquired which will lock the lock and stop the observer thread
                     #until it is released (i.e the user turns it back on)
                 else:
                     lock.acquire()
                     print 'Autosynch is now OFF. '
+                    sys_log("Autosynch was turned off")
 
             #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
@@ -336,11 +338,10 @@ def start(serverURL):
 
             1) Delete user
             2) Change a user's password
-            3) Start or stop file system
-            4) See user information
-            5) Get file system information
-            6) View traffic report log
-            7) Change your password
+            3) See user information
+            4) Get file system information
+            5) View traffic report log
+            6) Change your password
             '''
             opt = input("Please enter an option you want to do, or '0' to quit. ")
             while not isinstance(opt, int) or opt < 0 or opt > 7:
@@ -350,14 +351,12 @@ def start(serverURL):
             if opt == 2:
                 changePasswordAsAdmin(db)
             if opt == 3:
-                changeSystem()
-            if opt == 4:
                 viewUserInfo(db)
-            if opt == 5:
+            if opt == 4:
                 viewFileSystem(db)
-            if opt == 6:
+            if opt == 5:
                 viewReportLog()
-            if opt == 7:
+            if opt == 6:
                 changePassword(finalUserName, db)
 
     #Stop watching files
@@ -428,10 +427,6 @@ def changePasswordAsAdmin(db):
     newPassword = raw_input("Please enter the new password you want to change to: ")
     db.cursor().execute("UPDATE user_account SET password = (?) WHERE username = (?)", (newPassword, changedUserName, ))
     db.commit()
-
-
-def changeSystem():
-    print "This is how you would start or stop the system"
 
 
 def viewUserInfo(db):
