@@ -39,11 +39,9 @@ class MyEventHandler(FileSystemEventHandler):
         # print self.ignore_pattern in event.src_path
         if self.time == 0:
             self.time = os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime
-            print self.time
         else:
-            if os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime - self.time <= 1:
+            if os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime - self.time < 200:
                 self.time = os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime
-                print self.time
                 return
         main.clientDownload(self.clientName, self.serverUrl)
 
