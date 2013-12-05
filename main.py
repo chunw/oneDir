@@ -184,15 +184,23 @@ def clientUpload(filename, inputUserName, serverURL):
             os.chdir(expanduser("~/onedir"))
             f = 'filedata=@'
             g = f + filename
-            os.system('curl -F ' + "'" + g + "' " + serverURL)
+            fExists = True
+            try:
+                with open(filename):
+                    os.system('curl -F ' + "'" + g + "' " + serverURL)
+            except IOError:
+                fExists = False
             #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
-            updateCurs = db.execute("SELECT files FROM user_account where username =?", (inputUserName,))
-            fileList = updateCurs.fetchone()[0]
-            newFileList = addFile(fileList, filename + "," + str(get_file_size(filename)))
-            db.execute("UPDATE user_account SET files =? WHERE username =?", (newFileList, inputUserName,))
-            db.commit()
+            if fExists is True:
+                updateCurs = db.execute("SELECT files FROM user_account where username =?", (inputUserName,))
+                fileList = updateCurs.fetchone()[0]
+                newFileList = addFile(fileList, filename + "," + str(get_file_size(filename)))
+                db.execute("UPDATE user_account SET files =? WHERE username =?", (newFileList, inputUserName,))
+                db.commit()
+            else:
+                print 'File does not exist'
 
 
 #pass in username as well so that the DB can verify the user can make this request
@@ -208,6 +216,7 @@ def clientDownload(inputUserName, serverURL):
                 if ' ' in filename: #handle curl of files with spaces
                     filenameparts = filename.split(' ')
                     filename = filenameparts[0] + '_' + filenameparts[1]
+
                 if filename is not None:
                     os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
                     #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
