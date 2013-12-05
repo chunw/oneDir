@@ -211,7 +211,7 @@ def clientDownload(inputUserName, serverURL):
         if fileList is not None:
             fileList = parseList(fileList)
             for filename in fileList:
-                if filename is not '':
+                if filename is not '' and not filename == 'None' :
                     if ' ' in filename: #handle curl of files with spaces
                         filenameparts = filename.split(' ')
                         filename = filenameparts[0] + '_' + filenameparts[1]
