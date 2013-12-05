@@ -5,10 +5,10 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
-import watch2
 from time import gmtime, strftime
 from sqlite3 import dbapi2 as sqlite3
 import server
+import threading
 
 #Where the client knows to look for the folder
 
@@ -131,6 +131,7 @@ def clientDownloadOff(inputUserName, serverURL):
     fname = raw_input('Please enter the name of the file you would like to download: ')
     if findFile(fileList, fname) == True:
         os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        #os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
         sys_log(inputUserName + " manually downloaded file: " + fname)
     else:
         print "Sorry, you do not have permission to download this file."
@@ -183,9 +184,10 @@ def clientUpload(filename, inputUserName, serverURL):
             fExists = True
             try:
                 with open(filename):
-                    os.system('curl -F -s ' + "'" + g + "' " + serverURL)
+                    os.system('curl -F -s' + "'" + g + "' " + serverURL)
             except IOError:
                 fExists = False
+            #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
             if fExists is True:
@@ -216,6 +218,7 @@ def clientDownload(inputUserName, serverURL):
 
                     if filename is not None:
                         os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                    #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
 @manager.command
@@ -258,6 +261,10 @@ def start(serverURL):
 
     #Before beginning, update your files to the server (local copies override server copies)
     if type == 'normal':
+
+        #do_download = threading.Thread(target = clientDownload, args = [finalUserName, serverURL])
+        #do_download.start()
+
         clientDownload(finalUserName, serverURL)
 
         #Start watchdog
@@ -272,14 +279,6 @@ def start(serverURL):
         lock = observer._lock
         observer.start()
 
-        #Start watchdog on server changes (for multiple logins)
-        observer2 = watch2.Observer()
-        event_handler = watch2.MyEventHandler(finalUserName, serverURL, 0)
-        observer2.schedule(event_handler, path=expanduser("~/Dropbox/server/log"), recursive=True)
-
-        #Locks, too
-        lock2 = observer2._lock
-        observer2.start()
 
     opt = 22
 
@@ -317,7 +316,6 @@ def start(serverURL):
                     #If it gets to here. Then the observer thread was locked.
                     #This will release the lock on the observer thread, and the observer thread will start watching files again.
                     lock.release()
-                    lock2.release()
                     print 'Autosynch is now ON.'
                     sys_log(finalUserName + " turned on autosynch ")
                 #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
@@ -325,7 +323,6 @@ def start(serverURL):
                     #until it is released (i.e the user turns it back on)
                 else:
                     lock.acquire()
-                    lock2.acquire()
                     print 'Autosynch is now OFF. '
                     sys_log(finalUserName + " turned off autosynch ")
 
@@ -371,8 +368,6 @@ def start(serverURL):
     if type == 'normal':
         observer.stop()
         observer.join()
-        observer2.stop()
-        observer2.join()
 
 
 def createNewAccount(newUserName, newPassword, db):
@@ -457,27 +452,40 @@ def viewUserInfo(db):
 
 def printFriendly(dbList):
     flist = []
+
     for index in range(len(dbList)):
+
         flist.append(dbList[index][0])
+
     for i in flist:
         if i is None or i == 'None':
+
             flist.remove(i)
     for i in flist:
+
         if type(i) == type(''):
+
            ii = i.split(";")
+
            for j in ii:
                if not 'DS_Store' in j and not j=='':
+
                   print j
 
 
 def viewFileSystem(db):
+
     cur = db.execute("SELECT files FROM user_account")
+
     type = cur.fetchall()
     print "============================"
-    print "Files on server:            "
+
+    print "Files on server: "
     print "----------------------------"
+
     print "filename, file size in bytes"
     print "============================"
+
     printFriendly(type)
 
 
@@ -489,17 +497,14 @@ def viewReportLog():
 
 
 def viewFiles(dbstring):
-    print "============================"
-    print "User files:                 "
-    print "----------------------------"
-    print "filename, file size in bytes"
-    print "============================"
+    print 'files: '
     if dbstring is '' or dbstring is None:
         return
     fList = dbstring.split(';')
     for i in fList:
         if i is not '':
             print i
+
 
 if __name__ == '__main__':
     manager.run()
