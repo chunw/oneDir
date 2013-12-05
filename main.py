@@ -5,6 +5,7 @@ from flask import Flask, g
 from os.path import expanduser
 import os
 import watch
+import watch2
 from time import gmtime, strftime
 from sqlite3 import dbapi2 as sqlite3
 import server
@@ -144,7 +145,7 @@ def clientDownloadOff(inputUserName, serverURL):
 
 def sys_log(event):
     """ create system log """
-    f = open(expanduser("~/Dropbox/server/sys_log.txt"), "a")
+    f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), "a")
     f.write(event + " at: " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + "\n")
     f.close()
 
@@ -271,11 +272,21 @@ def start(serverURL):
         event_handler = watch.MyEventHandler(finalUserName, serverURL)
         observer.schedule(event_handler, path=expanduser("~/onedir"), recursive=True)
 
+
         #This creates a lock on the watchdog thread "observer", the Lock object created is called lock
         #when locked, the watchdog thread will be blocked until the lock is released
         #lock is intialized as unlocked
         lock = observer._lock
         observer.start()
+
+        #Start watchdog on server changes (for multiple logins)
+        observer2 = watch2.Observer()
+        event_handler = watch2.MyEventHandler(finalUserName, serverURL)
+        observer2.schedule(event_handler, path=expanduser("~/Dropbox/server/log"), recursive=True)
+
+        #Locks, too
+        lock2 = observer2._lock
+        observer2.start()
 
     opt = 22
 
@@ -313,6 +324,7 @@ def start(serverURL):
                     #If it gets to here. Then the observer thread was locked.
                     #This will release the lock on the observer thread, and the observer thread will start watching files again.
                     lock.release()
+                    lock2.release()
                     print 'Autosynch is now ON.'
                     sys_log("Autosynch was turned on")
                 #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
@@ -320,6 +332,7 @@ def start(serverURL):
                     #until it is released (i.e the user turns it back on)
                 else:
                     lock.acquire()
+                    lock2.acquire()
                     print 'Autosynch is now OFF. '
                     sys_log("Autosynch was turned off")
 
@@ -365,6 +378,8 @@ def start(serverURL):
     if type == 'normal':
         observer.stop()
         observer.join()
+        observer2.stop()
+        observer2.join()
 
 
 def createNewAccount(newUserName, newPassword, db):
@@ -454,7 +469,7 @@ def viewFileSystem(db):
 
 
 def viewReportLog():
-    f = open(expanduser("~/Dropbox/server/sys_log.txt"), 'r')
+    f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), 'r')
     log = f.read()
     print log
     f.close()
