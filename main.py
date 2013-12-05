@@ -25,12 +25,6 @@ def getUsername():
     return finalUserName
 
 
-#TODO: pipe or hide CURL output (-s for silent)
-#TODO: can create new folder and it curls the hierarchy
-#TODO: second local machine makes changes when first local machine does
-#TODO: admin user can optionally delete files off of server
-#TODO: handle curls when file has '(' in name
-
 #Database stuff
 fileApp.config.update(dict(
     DATABASE=expanduser("~/Dropbox/server/OneDir_accounts.db"),
@@ -136,8 +130,7 @@ def clientDownloadOff(inputUserName, serverURL):
     fileList = updateCurs.fetchone()[0]
     fname = raw_input('Please enter the name of the file you would like to download: ')
     if findFile(fileList, fname) == True:
-        os.system('curl ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
-        #os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
+        os.system('curl -s ' + serverURL + 'onedir/'+ fname + ' > ' + expanduser("~/onedir/") + fname)
         sys_log(inputUserName + " manually downloaded file: " + fname)
     else:
         print "Sorry, you do not have permission to download this file."
@@ -190,10 +183,9 @@ def clientUpload(filename, inputUserName, serverURL):
             fExists = True
             try:
                 with open(filename):
-                    os.system('curl -F ' + "'" + g + "' " + serverURL)
+                    os.system('curl -F -s ' + "'" + g + "' " + serverURL)
             except IOError:
                 fExists = False
-            #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
             if fExists is True:
@@ -223,8 +215,7 @@ def clientDownload(inputUserName, serverURL):
                         filename = filenameparts[0] + '_' + filenameparts[1]
 
                     if filename is not None:
-                        os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
-                    #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                        os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
 @manager.command
