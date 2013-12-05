@@ -312,12 +312,14 @@ def start(serverURL):
                     #This will release the lock on the observer thread, and the observer thread will start watching files again.
                     lock.release()
                     print 'Autosynch is now ON.'
+                    sys_log("Autosynch was turned on")
                 #If the lock is not locked, then autosynch was on and the user wants to turn auto synch off.
                 #Thus, the lock must be acquired which will lock the lock and stop the observer thread
                     #until it is released (i.e the user turns it back on)
                 else:
                     lock.acquire()
                     print 'Autosynch is now OFF. '
+                    sys_log("Autosynch was turned off")
 
             #If autosynch is off, then the dowload/upload methods need to be given the names of the files to be downloaded/uploaded
             #upload prompts the user for a file name and then uses the same clientUpload() method used when autosync is on
