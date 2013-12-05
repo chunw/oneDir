@@ -70,7 +70,7 @@ def update_db(filename, username, op):
             cur2 = db.execute("SELECT files FROM user_account where username =?", (username,))
             filelist = cur2.fetchone()[0]
             if op == 'add':
-                db.execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+                db.execute("UPDATE user_account SET files='" + addFile(filelist, filename + "," + str(get_file_size(filename))) + "' WHERE username='" + username + "'")
 
             if op == 'del':
                 db.execute("UPDATE user_account SET files='" + removeFile(filelist, filename) + "' WHERE username='" + username + "'")
@@ -79,14 +79,19 @@ def update_db(filename, username, op):
             return
 
 
-def addFile(dbstring, fname):
-    if dbstring is None:
-        dbstring = ""
-    fList = dbstring.split(';')
-    if fname in fList: # if the filename already exists, do nothing
+def addFile(dbstring, file):
+     # note: the second param is a 'fname,filesize' string
+     if dbstring is None:
+            dbstring = ""
+     fList = dbstring.split(';')
+     fnames = []
+     for str in fList:
+        str = str.split(",")
+        fnames.append(str[0])
+     if get_filename(file) in fnames: # if the filename already exists, do nothing
         return dbstring
-    else:
-        fList.append(fname)
+     else:
+        fList.append(file)
         newList = []
         for i in fList:
             x = i + ';'
@@ -99,11 +104,14 @@ def addFile(dbstring, fname):
 #@return: returns the new string of files with the file removed to put back in db
 #use this method when you want to remove a file from a user's associated files in the db
 def removeFile(dbstring, fname):
-    fList = dbstring.split(';')
-    if not fname in fList:  # if filename is not in filelist, do nothing
+    fList = dbstring.split(";")
+    filenames = parseList(dbstring)
+    if not fname in filenames:  # if filename is not in filelist, do nothing
         return dbstring
     else:
-        fList.remove(fname)
+        for f in fList:
+            if fname in f:
+                fList.remove(f)
         newList = []
         for i in fList:
             x =  i + ';'
@@ -115,16 +123,7 @@ def removeFile(dbstring, fname):
 #@return: returns a boolean value based on whether or not the user has this file
 #use this method to verify if user can view a file, sharing, etc
 def findFile(dbstring, fname):
-    fList = dbstring.split(';')
-    for i in fList:
-        if i == fname:
-            return True
-        else:
-            return False
-
-def parseList(dbstring):
-    return dbstring.split(';')
-
+    return fname in parseList(dbstring)
 
 #@param: database string of files, and file to remove
 #@return: returns the new string of files with the file added to put back in db
@@ -148,6 +147,34 @@ def sys_log(event):
     f.close()
 
 
+def get_file_size(filename):
+    """" return file size or zero """
+    for root, dirs, files in os.walk(expanduser("~/onedir"), topdown=False):
+        for name in files:
+            if name == filename:
+                f = os.path.join(root, name)
+                filesize = os.path.getsize(f)
+                if filesize:
+                    return filesize
+    return 0
+
+
+def get_filename(str):
+    """ extract filename from a 'filename,filesize' string"""
+    str = str.split(',')
+    return str[0]
+
+
+def parseList(dbstring):
+    """ return list of filenames """
+    fList = dbstring.split(';')
+    fnames = []
+    for str in fList:
+        str = str.split(",")
+        fnames.append(str[0])
+    return fnames
+
+
 def clientUpload(filename, inputUserName, serverURL):
     if not '~' in filename:
         sys_log(inputUserName + " uploaded file: " + filename)
@@ -161,10 +188,9 @@ def clientUpload(filename, inputUserName, serverURL):
             #os.system('curl -F -s' + g + ' ' + serverURL)
 
             #Update the file list for that user
-
             updateCurs = db.execute("SELECT files FROM user_account where username =?", (inputUserName,))
             fileList = updateCurs.fetchone()[0]
-            newFileList = addFile(fileList, filename)
+            newFileList = addFile(fileList, filename + "," + str(get_file_size(filename)))
             db.execute("UPDATE user_account SET files =? WHERE username =?", (newFileList, inputUserName,))
             db.commit()
 
@@ -182,9 +208,9 @@ def clientDownload(inputUserName, serverURL):
                 if ' ' in filename: #handle curl of files with spaces
                     filenameparts = filename.split(' ')
                     filename = filenameparts[0] + '_' + filenameparts[1]
-                print filename
-                os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
-                #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                if filename is not None:
+                    os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                    #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
 @manager.command
@@ -358,7 +384,7 @@ def shareFile(finalUserName):
     #filelist = ""
     cur2 = get_db().execute("SELECT files FROM user_account where username =?", (username,))
     filelist = cur2.fetchone()[0]
-    get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename) + "' WHERE username='" + username + "'")
+    get_db().execute("UPDATE user_account SET files='" + addFile(filelist, filename + "," + str(get_file_size(filename))) + "' WHERE username='" + username + "'")
     get_db().commit()
     sys_log(finalUserName + " shared file: " + filename + " with user: " + username)
     print("File sent to " + username + "!")
@@ -415,9 +441,9 @@ def viewUserInfo(db):
     viewFiles(type2)
 
 
-
 def viewFileSystem():
     print "This is how you would view the file system"
+
 
 
 def viewReportLog():
