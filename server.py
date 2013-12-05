@@ -46,4 +46,4 @@ def uploaded_files(filename):
 
 
 if __name__ == '__main__':
-    fileApp.run(host='0.0.0.0', port=8080, debug=True) #TODO replace local server with a real app url -> Heroku?
+    fileApp.run(host='0.0.0.0', port=8080, debug=True)

@@ -26,7 +26,6 @@ def getUsername():
 
 
 #TODO: pipe or hide CURL output (-s for silent)
-#TODO: viewFileSystem
 #TODO: can create new folder and it curls the hierarchy
 #TODO: second local machine makes changes when first local machine does
 #TODO: admin user can optionally delete files off of server
@@ -462,11 +461,28 @@ def viewUserInfo(db):
     viewFiles(type2)
 
 
+def printFriendly(dbList):
+    flist = []
+    for index in range(len(dbList)):
+        flist.append(dbList[index][0])
+    for i in flist:
+        if i is None or i == 'None':
+            flist.remove(i)
+    for i in flist:
+        if type(i) == type(''):
+           ii = i.split(";")
+           for j in ii:
+               if not 'DS_Store' in j and not j=='':
+                  print j
+
+
 def viewFileSystem(db):
     cur = db.execute("SELECT files FROM user_account")
     type = cur.fetchall()
-    print type
-
+    print "================"
+    print "Files on server:"
+    print "================"
+    printFriendly(type)
 
 def viewReportLog():
     f = open(expanduser("~/Dropbox/server/log/sys_log.txt"), 'r')

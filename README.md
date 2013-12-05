@@ -13,5 +13,4 @@ to monitor file system events. It works cross-platform.
 
 Demo
 --------
-Server machine runs server.py
-Client machine starts program with: `python main.py start <server IP>`
+Server machine runs server.py. Client machine starts program with: `python main.py start <server IP>`
