@@ -1,4 +1,4 @@
-__author__ = 'Chun'
+__author__ = 'Chris'
 
 from os.path import expanduser
 import os
@@ -18,11 +18,12 @@ class MyEventHandler(FileSystemEventHandler):
     """ customized file system event handler
     """
 
-    def __init__(self, client_name, server_url):
+    def __init__(self, client_name, server_url, time):
         super(FileSystemEventHandler, self).__init__()
         self.clientName = client_name
         self.serverUrl = server_url
         self.ignore_pattern = ".DS_Store"
+        self.time = time
 
     def catch_all(self, event, op):
         if not self.ignore_pattern in event.src_path:
@@ -36,16 +37,13 @@ class MyEventHandler(FileSystemEventHandler):
     def on_modified(self, event):
         # Note: event.is_directory is True for both files and folders
         # print self.ignore_pattern in event.src_path
-        if not self.ignore_pattern in event.src_path:
-            if event.is_directory:
-                # For Mac OS X: FSEvents returns only the directory for file modified events,
-                # which means event.is_directory is not reflecting the truth in Mac OS.
-                # The following code detects the full path in Mac OS.
-                files_in_dir = [event.src_path+"/"+f for f in os.listdir(event.src_path)]
-                op_file_path = max(files_in_dir, key=os.path.getmtime)
-                #print ("MOD", op_file_path)
-                filename = self.parse_filename(op_file_path)
-                main.clientDownload(self.clientName, self.serverUrl)
+        if self.time == 0:
+            self.time = os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime
+        else:
+            if os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime - self.time < 200:
+                self.time = os.stat(expanduser('~/Dropbox/server/log/sys_log.txt')).st_mtime
+                return
+        main.clientDownload(self.clientName, self.serverUrl)
 
 
 if __name__ == "__main__":

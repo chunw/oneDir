@@ -29,6 +29,7 @@ def getUsername():
 #TODO: can create new folder and it curls the hierarchy
 #TODO: second local machine makes changes when first local machine does
 #TODO: admin user can optionally delete files off of server
+#TODO: handle curls when file has '(' in name
 
 #Database stuff
 fileApp.config.update(dict(
@@ -208,19 +209,21 @@ def clientUpload(filename, inputUserName, serverURL):
 #pass in username as well so that the DB can verify the user can make this request
 def clientDownload(inputUserName, serverURL):
     #Update the files listed for user
-    sys_log(inputUserName + " pulled file changes to local machine ")
-    updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
-    fileList = updateCurs.fetchone()[0]
-    if fileList is not None:
-        fileList = parseList(fileList)
-        for filename in fileList:
-            if filename is not '':
-                if ' ' in filename: #handle curl of files with spaces
-                    filenameparts = filename.split(' ')
-                    filename = filenameparts[0] + '_' + filenameparts[1]
+    app = Flask(__name__)
+    with app.app_context():
+        sys_log(inputUserName + " pulled file changes to local machine ")
+        updateCurs = get_db().execute("SELECT files FROM user_account where username =?", (inputUserName,))
+        fileList = updateCurs.fetchone()[0]
+        if fileList is not None:
+            fileList = parseList(fileList)
+            for filename in fileList:
+                if filename is not '':
+                    if ' ' in filename: #handle curl of files with spaces
+                        filenameparts = filename.split(' ')
+                        filename = filenameparts[0] + '_' + filenameparts[1]
 
-                if filename is not None:
-                    os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
+                    if filename is not None:
+                        os.system('curl ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
                     #os.system('curl -s ' + serverURL + 'onedir/'+ filename + ' > ' + expanduser("~/onedir/") + filename)
 
 
@@ -280,7 +283,7 @@ def start(serverURL):
 
         #Start watchdog on server changes (for multiple logins)
         observer2 = watch2.Observer()
-        event_handler = watch2.MyEventHandler(finalUserName, serverURL)
+        event_handler = watch2.MyEventHandler(finalUserName, serverURL, 0)
         observer2.schedule(event_handler, path=expanduser("~/Dropbox/server/log"), recursive=True)
 
         #Locks, too
